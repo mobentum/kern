@@ -66,10 +66,6 @@ jobs:
     env:
       NPM_CONFIG_REGISTRY: https://registry.npmjs.org
 
-    defaults:
-      run:
-        working-directory: docs
-
     steps:
       - uses: actions/checkout@v5
 
