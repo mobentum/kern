@@ -1,4 +1,4 @@
-# kern - The Web Kernel for Go
+# Kern - The Web Kernel for Go
 
 ![kern logo](docs/public/branding/kern-logo-horizontal.svg)
 
@@ -8,13 +8,13 @@
 [![CI](https://github.com/mobentum/kern/actions/workflows/test.yml/badge.svg)](https://github.com/mobentum/kern/actions/workflows/test.yml)
 [![Release](https://img.shields.io/github/release/mobentum/kern.svg)](https://github.com/mobentum/kern/releases)
 
-kern is a lightweight web framework for Go focused on a small, reliable core so application code stays fast, explicit, and maintainable.
+Kern is a lightweight web framework for Go focused on a small, reliable core so application code stays fast, explicit, and maintainable.
 
 ## Why the name "kern"
 
 "kern" comes from "kernel".
 
-In operating systems, a kernel is the smallest trusted core that coordinates everything else. In the same spirit, kern aims to be a small web kernel:
+In operating systems, a kernel is the smallest trusted core that coordinates everything else. In the same spirit, Kern aims to be a small web kernel:
 
 - strong primitives
 - minimal policy
@@ -25,7 +25,7 @@ The goal is not to be the biggest framework. The goal is to be a dependable core
 
 ## Motivation
 
-kern was created to reduce the gap between everyday HTTP work and the Go standard library. It is designed for teams that want a practical framework without hidden runtime complexity:
+Kern was created to reduce the gap between everyday HTTP work and the Go standard library. It is designed for teams that want a practical framework without hidden runtime complexity:
 
 - embraces `net/http` instead of hiding it
 - avoids dependency sprawl in the core runtime
@@ -36,7 +36,7 @@ The framework stays intentionally small so engineers can understand internals qu
 
 ## Inspiration
 
-kern is inspired by:
+Kern is inspired by:
 
 - **Go stdlib design**: composable interfaces and explicit behavior
 - **Bottle (Python)**: minimal API surface with practical defaults
@@ -213,7 +213,7 @@ app.RouteWithMiddleware(http.MethodPost, "/upload", uploadHandler,
 
 ## Optional Packages
 
-Core `kern` remains dependency-free. Optional integrations can live in separate modules.
+Core Kern remains dependency-free. Optional integrations can live in separate modules.
 
 ### Structured Logging (`github.com/mobentum/kern/extensions/xlog`)
 
@@ -416,7 +416,7 @@ go run .
 
 ## Status
 
-kern is production-usable today for APIs and internal services, with an active roadmap focused on middleware depth, validation, and observability.
+Kern is production-usable today for APIs and internal services, with an active roadmap focused on middleware depth, validation, and observability.
 
 ## Performance workflow
 
