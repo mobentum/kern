@@ -45,6 +45,12 @@ Kern is inspired by:
 ## Features
 
 - **Go 1.22+ native routing** via `http.ServeMux`
+- **Named routes & path constraints** — typed URL params (`kern.UintPathConstraint`) and route lookup by name
+- **Built-in auth** — `BearerAuth` and `BasicAuth` middleware ship in core
+- **Route-specific middleware** — apply guards per route with `RouteWithMiddleware()`, no group nesting needed
+- **Structured request binding** — `Bind()` / `BindQuery()` / `BindForm()` / `BindHeader()` with struct tags
+- **File handling** — multipart upload (`SaveFile`), download (`DownloadFile`), streaming with range support (`StreamFile`)
+- **Conditional requests** — built-in `ETag`, `LastModified`, `If-None-Match` / `If-Modified-Since` evaluation
 - **Context pooling** for lower allocation pressure
 - **Middleware chaining** with standard `func(http.Handler) http.Handler`
 - **Route groups** for shared prefixes and middleware
