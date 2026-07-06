@@ -10,11 +10,6 @@ const eslintConfig = defineConfig([
     'next-env.d.ts',
     '.source/**',
   ]),
-  {
-    rules: {
-      'react/display-name': 'off',
-    },
-  },
 ]);
 
 export default eslintConfig;
