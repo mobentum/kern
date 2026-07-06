@@ -248,7 +248,8 @@ func (app *App) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Slow path: atomic load (for backwards compatibility)
-	handler := app.handler.Load().(handlerRef).Handler
+	ref, _ := app.handler.Load().(handlerRef)
+	handler := ref.Handler
 	handler.ServeHTTP(w, r)
 }
 
@@ -346,7 +347,7 @@ func (app *App) handleNamedWithConstraintsAndMiddleware(
 			r.Body = http.MaxBytesReader(w, r.Body, app.bodyLimit)
 		}
 
-		c := app.pool.Get().(*Context)
+		c, _ := app.pool.Get().(*Context)
 		c.reset(w, r)
 		handler(c)
 		app.pool.Put(c)

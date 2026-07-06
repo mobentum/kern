@@ -70,7 +70,7 @@ func (g *Group) handleNamedWithConstraintsAndMiddleware(
 		}
 
 		// retrieve context from pool
-		c := g.app.pool.Get().(*Context)
+		c, _ := g.app.pool.Get().(*Context)
 		c.reset(w, r)
 
 		handler(c)

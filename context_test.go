@@ -374,7 +374,7 @@ func TestContext_JSON(t *testing.T) {
 	res := serve(app, req)
 
 	var got map[string]string
-	json.Unmarshal(res.Body.Bytes(), &got)
+	_ = json.Unmarshal(res.Body.Bytes(), &got)
 	if got["message"] != "hello" {
 		t.Errorf("got %v, want hello", got)
 	}
@@ -1254,7 +1254,7 @@ func TestContext_SaveFile(t *testing.T) {
 	writer := multipart.NewWriter(body)
 	part, _ := writer.CreateFormFile("upload", "test.txt")
 	_, _ = part.Write(data)
-	writer.Close()
+	_ = writer.Close()
 
 	req := newRequestWithBody(http.MethodPost, "/upload", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
