@@ -1,0 +1,27 @@
+---
+title: Middleware - Gzip
+description: Detailed guide to middleware.Gzip for response compression and bandwidth reduction on Go APIs.
+---
+
+# middleware.Gzip
+
+Compresses response bodies when client includes `Accept-Encoding: gzip`.
+
+## Signature
+
+```go
+func Gzip() func(http.Handler) http.Handler
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.Gzip())
+```
+
+## Notes
+
+- Adds `Content-Encoding: gzip` when compression is applied.
+- Sets `Vary: Accept-Encoding` for correct caching behavior.

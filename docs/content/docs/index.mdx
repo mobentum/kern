@@ -1,0 +1,116 @@
+---
+title: Introduction
+description: kern is a lightweight Go web framework for fast API servers, stdlib-native routing, low overhead middleware, and production-ready request handling.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# kern
+
+kern is a minimalist web framework for Go, inspired by Python's Bottle and designed for developers who value simplicity and performance. It is built directly on top of the Go standard library's `net/http` package, leveraging the powerful new routing capabilities introduced in Go 1.22.
+
+kern is especially well suited for Go API servers, internal platform services, JSON backends, lightweight microservices, and teams that want stdlib-native HTTP semantics without framework bloat.
+
+<Callout type="info">
+    Built on Go 1.22's enhanced `net/http` router with zero external
+    dependencies. This ensures future-proof compatibility and stability.
+</Callout>
+
+## Why kern?
+
+- **🚀 Go 1.22+ Routing**: Leverages stdlib pattern matching for path parameters and wildcards.
+- **⚡ Context Pooling**: Minimal allocations in hot paths using `sync.Pool` for optimal performance.
+- **🎯 Standard Patterns**: No magic, just clean and idiomatic Go code.
+- **📦 Zero Dependencies**: Core framework uses only the Go standard library.
+- **🔧 Middleware Ready**: Built-in Logger, Recovery, and CORS middleware.
+- **🛡️ Production Ready**: Graceful shutdown, timeouts, and TLS support out of the box.
+
+## Philosophy
+
+kern embraces minimalism without sacrificing functionality. It provides the essential building blocks for web applications while staying out of your way. You get:
+
+- Clean, predictable APIs.
+- Familiar HTTP semantics.
+- Easy-to-understand middleware patterns.
+- Performance-focused design.
+
+## Features
+
+- **Routing**: Support for all standard HTTP methods (`GET`, `POST`, `PUT`, `DELETE`, etc.) with group support.
+- **Context**: A powerful `Context` object for handling requests and responses efficiently.
+- **Middleware**: Easy-to-use middleware system with built-in options.
+- **Data Binding**: Helpers for JSON and XML binding.
+- **Response Helpers**: Simple methods for sending JSON, XML, HTML, and text responses.
+- **Static Files**: Serve static files with ease.
+
+## Best Fit Use Cases
+
+- Build REST and JSON APIs with predictable `net/http` behavior.
+- Migrate existing Go HTTP handlers into a structured framework gradually.
+- Run lightweight services where low allocations and clear middleware layering matter.
+- Ship production endpoints with request guards, sessions, timeouts, and security headers.
+
+## Examples
+
+kern includes ready-to-run examples in the `examples` directory:
+
+| Example | Description |
+|---------|-------------|
+| [basic](../examples/basic/main.go) | Simple hello world with JSON responses |
+| [rest-api](../examples/rest-api/main.go) | Full CRUD REST API with route groups |
+| [middleware](../examples/middleware/main.go) | Custom middleware patterns |
+| [observability](../examples/observability/main.go) | RequestGuard deny metrics and session cookie failure signals |
+| [file-upload](../examples/file-upload/main.go) | Handle multipart file uploads |
+| [file-download](../examples/file-download/main.go) | Download, stream, and serve static files |
+| [nested-routes](../examples/nested-routes/main.go) | Nested route groups structure |
+
+Run any example:
+
+```bash
+go run examples/basic
+```
+
+## Frequently Asked Questions
+
+### Is kern good for API servers?
+
+Yes. kern is a strong fit for API servers that need low overhead, clear middleware composition, and full compatibility with Go's standard `net/http` ecosystem.
+
+### Does kern replace `net/http`?
+
+No. kern builds on top of `net/http` and Go 1.22+ routing, so the request model stays familiar and interoperable.
+
+### What should I read next?
+
+- Start with [Getting Started](/docs/getting-started) for installation and the first app.
+- Read [Routing](/docs/routing) to understand patterns, groups, and params.
+- Read [Middleware](/docs/middleware) and [Middleware Catalog](/docs/middleware-catalog) for request processing.
+- Read [Architecture Flow](/docs/architecture-flow) for the request/response lifecycle.
+- Read [Contributor Quality Workflow](/docs/contributor-quality-workflow) for local quality checks and PR/release readiness.
+
+## Next Steps
+
+<div className="grid grid-cols-2 gap-4 mt-4">
+    <a
+        href="/docs/getting-started"
+        className="p-4 border rounded-lg hover:bg-cyan-50 dark:hover:bg-cyan-900/10 transition-colors group"
+    >
+        <h3 className="font-semibold mb-1 group-hover:text-cyan-700 dark:group-hover:text-cyan-300">
+            Getting Started →
+        </h3>
+        <p className="text-sm text-zinc-500">
+            Install kern and build your first app.
+        </p>
+    </a>
+    <a
+        href="/docs/routing"
+        className="p-4 border rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-900/10 transition-colors group"
+    >
+        <h3 className="font-semibold mb-1 group-hover:text-emerald-700 dark:group-hover:text-emerald-300">
+            Routing →
+        </h3>
+        <p className="text-sm text-zinc-500">
+            Learn about URL patterns and groups.
+        </p>
+    </a>
+</div>

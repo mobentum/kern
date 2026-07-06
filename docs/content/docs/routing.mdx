@@ -1,0 +1,133 @@
+---
+title: Routing
+description: Learn kern routing for Go web services, including HTTP methods, path parameters, wildcards, route groups, static files, and stdlib-native route matching.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## HTTP Methods
+
+kern provides helper methods for all standard HTTP verbs. This makes route definition declarative and easy to read. Since kern builds on top of `net/http`, these are fully compatible with standard handlers.
+
+```go
+app := kern.Default()
+
+// Basic routes
+app.GET("/users", listUsers)
+app.POST("/users", createUser)
+app.PUT("/users/{id}", updateUser)
+app.PATCH("/users/{id}", patchUser)
+app.DELETE("/users/{id}", deleteUser)
+
+// Other methods
+app.HEAD("/status", checkStatus)
+app.OPTIONS("/api", showOptions)
+```
+
+## Path Parameters
+
+kern utilizes the robust pattern matching from Go 1.22's `net/http`. Parameters are defined using `{name}` syntax in the path.
+
+If you want lightweight Go routing without a custom router abstraction, kern keeps route definitions close to the standard library while adding clearer ergonomics.
+
+### Capturing Values
+
+To retrieve a parameter value, use `c.Param("name")`.
+
+```go
+// Route: /users/{id}
+app.GET("/users/{id}", func(c *kern.Context) {
+    id := c.Param("id")
+    c.Text(200, "User ID: %s", id)
+})
+```
+
+### Multiple Parameters
+
+You can define multiple parameters in a single route.
+
+```go
+// Route: /posts/{category}/{id}
+app.GET("/posts/{category}/{id}", func(c *kern.Context) {
+    category := c.Param("category")
+    id := c.Param("id")
+    
+    c.JSON(200, map[string]string{
+        "category": category,
+        "id":       id,
+    })
+})
+```
+
+### Wildcards
+
+Use `{name...}` to match the remaining path segments. This is useful for file servers or catch-all routes.
+
+```go
+// Matches /files/images/logo.png
+app.GET("/files/{path...}", func(c *kern.Context) {
+    path := c.Param("path")
+    c.Text(200, "Requested file: %s", path)
+})
+```
+
+## Route Groups
+
+Grouping routes allows you to organize your application structure and share common middleware (like authentication or logging) across a set of routes.
+
+```go
+// Create a group for API v1
+v1 := app.Group("/api/v1")
+
+// Apply middleware specific to this group
+v1.Use(authMiddleware)
+
+// Define routes under /api/v1
+{
+    v1.GET("/users", listUsers) // GET /api/v1/users
+    v1.POST("/users", createUser) // POST /api/v1/users
+}
+
+// Create a nested group for admin
+admin := v1.Group("/admin")
+{
+    admin.DELETE("/users/{id}", deleteUser) // DELETE /api/v1/admin/users/{id}
+}
+```
+
+## Static Files
+
+Serve static files from a directory using `app.Static`. This automatically sets up a file server for the specified directory.
+
+```go
+// Serve files from the "./public" directory at the "/static" path
+// e.g. /static/css/style.css -> ./public/css/style.css
+app.Static("/static/", "./public")
+```
+
+<Callout type="warn">
+    Ensure the path prefix ends with a slash `/` (e.g., `/static/`) for proper routing behavior.
+</Callout>
+
+## Routing strategy tips
+
+- Use constrained or clearly scoped routes for predictable API behavior.
+- Use route groups to keep versioned APIs and admin surfaces organized.
+- Use wildcards for file serving and catch-all behavior only when needed.
+
+## See Also
+
+- [Nested Routes Example](../examples/nested-routes/main.go) - Demonstrates deeply nested route groups
+- [REST API Example](../examples/rest-api/main.go) - Full CRUD with route groups
+- [Context API](/docs/context) - Read params, queries, and body data in handlers
+- [Architecture Flow](/docs/architecture-flow) - Understand how routing fits into middleware and response flow
+
+## FAQ
+
+### Does kern use Go's built-in router?
+
+Yes. kern builds on Go 1.22+ `net/http` routing semantics instead of shipping a separate routing engine.
+
+### Can I organize large APIs with groups?
+
+Yes. Route groups are the preferred way to structure versioned APIs, protected admin areas, and shared middleware layers.

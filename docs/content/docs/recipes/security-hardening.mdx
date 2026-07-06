@@ -1,0 +1,51 @@
+---
+title: Recipe - Security Hardening
+description: Security-first middleware and route policy patterns for kern APIs, including auth, CSRF, header limits, and request guards.
+---
+
+# Security Hardening
+
+Use this recipe to harden public-facing APIs.
+
+## Baseline middleware
+
+```go
+app.Use(kern.Recovery())
+app.Use(kern.CORS([]string{"https://app.example.com"}))
+app.Use(middleware.SecurityHeaders())
+app.Use(middleware.HeaderLimits(middleware.HeaderLimitsConfig{
+    MaxHeaderCount: 80,
+    MaxHeaderBytes: 12 * 1024,
+}))
+```
+
+## Protect admin/API groups
+
+```go
+admin := app.Group("/admin")
+admin.Use(kern.BasicAuth("admin", "change-me"))
+
+api := app.Group("/api")
+api.Use(middleware.JWT(middleware.JWTConfig{Secret: []byte("replace-me")}))
+```
+
+## Browser session routes
+
+```go
+web := app.Group("/web")
+web.Use(middleware.Session(middleware.SessionConfig{SigningKey: []byte("replace-me")}))
+web.Use(middleware.CSRF())
+```
+
+## Route policy enforcement
+
+```go
+app.RouteWithMiddleware("POST", "/upload", uploadHandler,
+    middleware.RequestGuard(middleware.RequestGuardConfig{
+        MaxBodyBytes:      8 << 20,
+        RequireBody:       true,
+        RequireHeaders:    []string{"X-Tenant"},
+        AllowContentTypes: []string{"application/json", "multipart/form-data"},
+    }),
+)
+```

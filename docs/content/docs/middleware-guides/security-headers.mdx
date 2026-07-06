@@ -1,0 +1,27 @@
+---
+title: Middleware - SecurityHeaders
+description: Detailed guide to middleware.SecurityHeaders for helmet-style HTTP response hardening.
+---
+
+# middleware.SecurityHeaders
+
+Sets security-focused HTTP headers such as CSP-related and browser hardening headers.
+
+## Signature
+
+```go
+func SecurityHeaders(configs ...SecurityHeadersConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.SecurityHeaders())
+```
+
+## Best practices
+
+- Start with defaults, then tune CSP and policies to your frontend requirements.
+- Validate headers with browser security scanners after changes.

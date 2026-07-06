@@ -1,0 +1,30 @@
+---
+title: Middleware - HeaderLimits
+description: Detailed guide to middleware.HeaderLimits for request header count and size enforcement.
+---
+
+# middleware.HeaderLimits
+
+Rejects requests that exceed configured request header count or total header bytes.
+
+## Signature
+
+```go
+func HeaderLimits(configs ...HeaderLimitsConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.HeaderLimits(middleware.HeaderLimitsConfig{
+    MaxHeaderCount: 80,
+    MaxHeaderBytes: 12 * 1024,
+}))
+```
+
+## Notes
+
+- Default overflow status is `431 Request Header Fields Too Large`.
+- Useful against oversized header abuse and accidental proxy/header bloat.

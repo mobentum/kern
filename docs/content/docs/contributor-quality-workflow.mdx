@@ -1,0 +1,84 @@
+---
+title: Contributor Quality Workflow
+description: "Practical quality workflow for kern contributors: linting, vulnerability scanning, tests, docs checks, and release-readiness checks."
+---
+
+# Contributor Quality Workflow
+
+Use this page as the standard contributor runbook before opening a PR or preparing a release.
+
+## One-time setup
+
+Install local quality tools:
+
+```bash
+go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+go install golang.org/x/vuln/cmd/govulncheck@latest
+```
+
+Validate tools are available:
+
+```bash
+make check-go-tools
+```
+
+## Daily development loop
+
+Run fast checks while iterating:
+
+```bash
+make go-vet
+go test ./...
+```
+
+Run full quality checks before pushing:
+
+```bash
+make go-quality
+go test ./...
+```
+
+## Docs checks
+
+If your change touches docs, run:
+
+```bash
+make ci-docs
+```
+
+## Benchmark checks
+
+If your change affects hot paths or middleware overhead, run at least:
+
+```bash
+make ci-benchmark-smoke
+```
+
+For deeper analysis, use the benchmark workflow in the repo `Makefile` (`bench-full`, `bench-save`, and `pprof-*` targets).
+
+## PR readiness checklist
+
+1. `make go-quality` passes.
+2. `go test ./...` passes.
+3. `make ci-docs` passes when docs are touched.
+4. `make ci-benchmark-smoke` passes when performance-sensitive code is touched.
+5. Any behavior or API change is reflected in docs.
+
+## Release readiness checklist
+
+1. Sync status in `ROADMAP_STATUS.md`.
+2. Update continuity notes in `handoff/WORK_CONTEXT.md`.
+3. Confirm CI workflow passes (`go-quality`, tests, docs, benchmark smoke).
+4. Confirm unresolved risks are documented with owner and mitigation.
+
+## CI mapping
+
+- `go-quality` job: `go vet` + `golangci-lint` + `govulncheck`
+- `test` job: `go build` + `go test`
+- `docs` job: docs install, lint, type-check, build
+- `benchmark-smoke` job: quick benchmark sanity check
+
+## Troubleshooting
+
+- If `make check-go-tools` fails, install missing binaries and ensure `$GOPATH/bin` is on your `PATH`.
+- If docs install fails in restricted networks, set npm registry explicitly in CI/local environment.

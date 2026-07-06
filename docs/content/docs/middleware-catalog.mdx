@@ -1,0 +1,218 @@
+---
+title: Middleware Catalog
+description: Complete middleware catalog for kern, covering built-in Go HTTP middleware, optional first-party middleware, request guards, sessions, rate limiting, and response controls.
+---
+
+# Middleware Catalog
+
+This page lists middleware currently shipped with kern.
+
+Use this page when you need a quick reference for what middleware exists, which package it belongs to, and how to layer it into a Go API server.
+
+## Core package (`github.com/mobentum/kern`)
+
+### `kern.Logger(configs ...kern.LoggerConfig)`
+
+Request logging middleware with text/json output options.
+
+Key options:
+- `Format`: `text` or `json`
+- `Output`: destination writer
+- `SLogger`: optional `*slog.Logger` for structured logging backends
+- `Fields`: static key/value fields
+
+### `kern.Recovery()`
+
+Panic recovery middleware that logs stack traces and returns `500`.
+
+### `kern.CORS(origins []string)` / `kern.CORSWithConfig(config kern.CORSConfig)`
+
+Cross-origin request handling.
+
+### `kern.BearerAuth(token string)` / `kern.BearerAuthWithConfig(config kern.BearerAuthConfig)`
+
+Bearer-token auth middleware (`Authorization: Bearer ...`).
+
+### `kern.BasicAuth(username, password string)` / `kern.BasicAuthWithConfig(config kern.BasicAuthConfig)`
+
+HTTP Basic auth middleware (`Authorization: Basic ...`).
+
+## Optional package (`github.com/mobentum/kern/extensions/xlog`)
+
+### `xlog.NewLogger(configs ...xlog.Config)`
+
+Returns a `*slog.Logger` backed by zerolog.
+
+Config options:
+- `Format`: `json` (default) or `console`
+- `Level`: minimum enabled `slog.Level`
+- `Output`: destination writer (defaults to stdout)
+- `TimeFormat`: timestamp format (defaults to RFC3339Nano)
+
+Example:
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xlog"
+)
+
+app := kern.New(
+    kern.WithSlogLogger(xlog.NewLogger(xlog.Config{Format: "json"})),
+)
+
+app.Use(kern.Logger(kern.LoggerConfig{
+    SLogger: xlog.NewLogger(xlog.Config{Format: "console"}),
+    Fields: map[string]interface{}{
+        "service": "users-api",
+    },
+}))
+```
+
+## Optional package (`github.com/mobentum/kern/extensions/openapi`)
+
+### `openapi.Register(app, config)`
+
+Registers OpenAPI JSON and Swagger UI endpoints.
+
+Defaults:
+- JSON endpoint: `/openapi.json`
+- Docs endpoint: `/docs`
+
+Example:
+
+```go
+import (
+    "net/http"
+
+    "github.com/mobentum/kern/extensions/openapi"
+)
+
+openapi.Register(app, openapi.Config{
+    Info: openapi.Info{Title: "Users API", Version: "1.0.0"},
+    Routes: []openapi.Route{
+        {
+            Method:      http.MethodGet,
+            Path:        "/users/{id}",
+            Summary:     "Get user",
+            OperationID: "getUser",
+            Tags:        []string{"users"},
+        },
+    },
+})
+```
+
+## Optional package (`github.com/mobentum/kern/middleware`)
+
+### `middleware.RequestID()`
+
+Adds and propagates `X-Request-ID`.
+
+### `middleware.Gzip()`
+
+Compresses responses when client supports gzip.
+
+### `middleware.Timeout(configs ...middleware.TimeoutConfig)`
+
+Request timeout middleware using stdlib timeout handling.
+
+### `middleware.RateLimiter(configs ...middleware.RateLimiterConfig)`
+
+Fixed-window request rate limiting.
+
+### `middleware.JWT(config middleware.JWTConfig)`
+
+HS256 JWT auth middleware with claims injection.
+
+### `middleware.CSRF(configs ...middleware.CSRFConfig)`
+
+Double-submit CSRF protection middleware.
+
+### `middleware.SecurityHeaders(configs ...middleware.SecurityHeadersConfig)`
+
+Helmet-style response security headers middleware.
+
+### `middleware.HeaderLimits(configs ...middleware.HeaderLimitsConfig)`
+
+Request header guard middleware.
+
+Key options:
+- `MaxHeaderCount`: maximum number of request headers accepted.
+- `MaxHeaderBytes`: maximum total header key/value bytes accepted.
+- `StatusCode`: HTTP status returned when limits are exceeded (defaults to `431`).
+- `Message`: response message when limits are exceeded.
+- `Skip`: bypass function for selected requests.
+
+### `middleware.RequestGuard(configs ...middleware.RequestGuardConfig)`
+
+Per-route request guard middleware.
+
+Key options:
+- `MaxBodyBytes`: route-level request body size limit.
+- `RequireBody`: reject empty-body requests for guarded endpoints.
+- `RequireHeaders`: enforce required request headers.
+- `AllowContentTypes`: allow-list media types for requests with bodies.
+
+### `middleware.ResponseLimit(configs ...middleware.ResponseLimitConfig)`
+
+Per-route response body size limiter.
+
+Key options:
+- `MaxBytes`: maximum response bytes allowed for the route.
+- `StatusCode`: status returned when the first write exceeds the limit.
+- `Message`: response body message for overflow rejections.
+- `Skip`: bypass function for specific requests.
+
+Notes:
+- Best used on routes with bounded payloads.
+- For streamed responses, writes beyond the limit return `middleware.ErrResponseTooLarge`.
+
+### `middleware.Session(configs ...middleware.SessionConfig)`
+
+Signed cookie session middleware.
+
+Hardening options:
+- `VerifyKeys`: accept previous signing keys during rotation.
+- `EncryptionKey`: enable encrypted session payloads (AES-GCM).
+- `DecryptKeys`: accept previous encryption keys during rotation.
+
+Session accessor:
+
+```go
+session, ok := middleware.GetSession(c.Context())
+if ok {
+    session.Set("user_id", "123")
+}
+```
+
+## Recommended API layering
+
+- Put generic concerns in app-global middleware (`Logger`, `Recovery`, CORS, `RequestID`).
+- Apply auth/authorization middleware per group (`/api`, `/admin`).
+- Apply route-specific guards with `RouteWithMiddleware` / `RouteNamedWithMiddleware`.
+- Use `Session`, `CSRF`, `JWT`, and `RateLimiter` as close as possible to protected surfaces.
+
+## Detailed middleware guides
+
+- [Logger](/docs/middleware-guides/logger)
+- [Recovery](/docs/middleware-guides/recovery)
+- [CORS](/docs/middleware-guides/cors)
+- [BearerAuth](/docs/middleware-guides/bearer-auth)
+- [BasicAuth](/docs/middleware-guides/basic-auth)
+- [RequestID](/docs/middleware-guides/request-id)
+- [Gzip](/docs/middleware-guides/gzip)
+- [Timeout](/docs/middleware-guides/timeout)
+- [RateLimiter](/docs/middleware-guides/rate-limiter)
+- [JWT](/docs/middleware-guides/jwt)
+- [CSRF](/docs/middleware-guides/csrf)
+- [SecurityHeaders](/docs/middleware-guides/security-headers)
+- [HeaderLimits](/docs/middleware-guides/header-limits)
+- [RequestGuard](/docs/middleware-guides/request-guard)
+- [ResponseLimit](/docs/middleware-guides/response-limit)
+- [Session](/docs/middleware-guides/session)
+
+## See Also
+
+- [Middleware](/docs/middleware) - Middleware execution model and custom middleware examples
+- [Recipes](/docs/recipes) - Practical patterns for logging, guards, sessions, and health endpoints
+- [Migration Guide](/docs/migration-guide) - Upgrade guidance for adopting newer middleware capabilities

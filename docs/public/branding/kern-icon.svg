@@ -1,0 +1,50 @@
+<svg width="512" height="512" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">kern cosmic energy icon</title>
+  <desc id="desc">A cosmic energy orb with radiating pulses, glowing cyan core, and deep-space purple halo.</desc>
+  <defs>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="60%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#2E1065" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#4C1D95" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Outer glow -->
+  <circle cx="12" cy="12" r="10" fill="url(#glow)" opacity="0.4"/>
+
+  <!-- Energy ring -->
+  <circle cx="12" cy="12" r="6" fill="none" stroke="#A78BFA" stroke-width="0.6" opacity="0.7"/>
+  <circle cx="12" cy="12" r="8" fill="none" stroke="#6366F1" stroke-width="0.3" opacity="0.5"/>
+
+  <!-- Core orb -->
+  <circle cx="12" cy="12" r="4" fill="url(#core)"/>
+
+  <!-- Core highlight -->
+  <circle cx="11" cy="10.5" r="1.5" fill="#67E8F9" opacity="0.8"/>
+
+  <!-- Radiating energy beams (8-point) -->
+  <line x1="12" y1="4" x2="12" y2="7" stroke="#22D3EE" stroke-width="0.7" stroke-linecap="round"/>
+  <line x1="12" y1="17" x2="12" y2="20" stroke="#22D3EE" stroke-width="0.7" stroke-linecap="round"/>
+  <line x1="4" y1="12" x2="7" y2="12" stroke="#22D3EE" stroke-width="0.7" stroke-linecap="round"/>
+  <line x1="17" y1="12" x2="20" y2="12" stroke="#22D3EE" stroke-width="0.7" stroke-linecap="round"/>
+
+  <!-- Diagonal beams -->
+  <line x1="6.3" y1="6.3" x2="8.5" y2="8.5" stroke="#A78BFA" stroke-width="0.5" stroke-linecap="round"/>
+  <line x1="15.5" y1="15.5" x2="17.7" y2="17.7" stroke="#A78BFA" stroke-width="0.5" stroke-linecap="round"/>
+  <line x1="17.7" y1="6.3" x2="15.5" y2="8.5" stroke="#A78BFA" stroke-width="0.5" stroke-linecap="round"/>
+  <line x1="8.5" y1="15.5" x2="6.3" y2="17.7" stroke="#A78BFA" stroke-width="0.5" stroke-linecap="round"/>
+
+  <!-- Orbiting particle dots -->
+  <circle cx="12" cy="3" r="0.6" fill="#67E8F9"/>
+  <circle cx="18" cy="9" r="0.5" fill="#C084FC"/>
+  <circle cx="19" cy="14" r="0.4" fill="#818CF8"/>
+  <circle cx="17" cy="19" r="0.5" fill="#A78BFA"/>
+  <circle cx="7" cy="19" r="0.5" fill="#A78BFA"/>
+  <circle cx="5" cy="14" r="0.4" fill="#818CF8"/>
+  <circle cx="6" cy="9" r="0.5" fill="#C084FC"/>
+  <circle cx="9" cy="4" r="0.4" fill="#67E8F9"/>
+</svg>

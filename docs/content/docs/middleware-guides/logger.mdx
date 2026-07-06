@@ -1,0 +1,39 @@
+---
+title: Middleware - Logger
+description: Detailed guide to kern.Logger middleware with config options and production logging examples for Go API servers.
+---
+
+# kern.Logger
+
+`kern.Logger` logs request method, path, status, duration, and response size.
+
+## Signature
+
+```go
+func Logger(configs ...LoggerConfig) MiddlewareFunc
+```
+
+## Common config options
+
+- `Format`: `text` or `json`
+- `Output`: custom writer destination
+- `SLogger`: structured logger backend (`*slog.Logger`)
+- `Fields`: static fields to attach to all request logs
+
+## Example
+
+```go
+app := kern.New()
+app.Use(kern.Logger(kern.LoggerConfig{
+    Format: "json",
+    Fields: map[string]interface{}{
+        "service": "users-api",
+        "env": "prod",
+    },
+}))
+```
+
+## Best practices
+
+- Place logger early in global middleware chain.
+- Add request IDs before logger if you want correlation IDs in logs.

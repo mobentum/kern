@@ -1,0 +1,54 @@
+---
+title: Recipe - Production API Blueprint
+description: End-to-end kern production API setup with middleware order, timeouts, health endpoints, and graceful shutdown.
+---
+
+# Production API Blueprint
+
+Use this blueprint as a baseline for production services.
+
+## Goals
+
+- Stable request lifecycle under load
+- Predictable error and timeout behavior
+- Easy incident debugging with request correlation
+
+## Recommended middleware order
+
+```go
+app := kern.New()
+
+app.Use(middleware.RequestID())
+app.Use(kern.Logger(kern.LoggerConfig{Format: "json"}))
+app.Use(kern.Recovery())
+app.Use(kern.CORS([]string{"https://app.example.com"}))
+app.Use(middleware.SecurityHeaders())
+app.Use(middleware.Timeout(middleware.TimeoutConfig{Duration: 2 * time.Second}))
+```
+
+## Route layering
+
+```go
+api := app.Group("/api")
+api.Use(middleware.RateLimiter())
+
+api.GET("/health", healthHandler)
+api.GET("/ready", readyHandler)
+```
+
+## Run options
+
+```go
+app.Run(":8080",
+    kern.WithReadTimeout(5*time.Second),
+    kern.WithWriteTimeout(10*time.Second),
+    kern.WithGracefulShutdown(10*time.Second),
+)
+```
+
+## Checklist
+
+- Request ID appears in response and logs
+- Panic path returns consistent `500` JSON
+- Health and readiness checks are wired to dependencies
+- Timeouts and graceful shutdown are verified during deploy

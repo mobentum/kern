@@ -1,0 +1,368 @@
+---
+title: Recipes
+description: Production-focused kern recipes for Go API servers, including health checks, graceful shutdown, SPA serving, JSON errors, observability, and middleware patterns.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+# Recipes
+
+This page collects practical patterns for building real Go services with kern.
+Use it when you need copy-pasteable solutions for API behavior, operations, observability, and project structure.
+
+## Recipe Index
+
+- [Production API Blueprint](/docs/recipes/production-api-blueprint)
+- [Observability Patterns](/docs/recipes/observability-patterns)
+- [Security Hardening](/docs/recipes/security-hardening)
+- [Performance and Limits](/docs/recipes/performance-and-limits)
+
+## Custom 404 Handler
+
+Since kern uses `http.ServeMux` internally, 404s are handled by default. However, you can create a custom catch-all route if you need specific 404 logic (like returning a JSON error instead of text).
+
+To handle 404s within a group (e.g., API), use a wildcard at the end of your group definitions.
+
+```go
+app.GET("/{path...}", func(c *kern.Context) {
+    c.JSON(404, map[string]string{
+        "error": "resource not found",
+    })
+})
+```
+
+## Graceful Shutdown
+
+kern supports graceful shutdown configuration, allowing ongoing requests to complete before the server stops.
+
+```go
+// 10 seconds timeout for graceful shutdown
+app.Run(":8080", kern.WithGracefulShutdown(10*time.Second))
+```
+
+## Server Timeouts
+
+Protect your server from slow clients by configuring read and write timeouts.
+
+```go
+app.Run(":8080",
+    kern.WithReadTimeout(5*time.Second),
+    kern.WithWriteTimeout(10*time.Second),
+)
+```
+
+## Serving Single Page Applications (SPA)
+
+To serve an SPA (like React, Vue, Svelte) where all non-file routes should redirect to `index.html`:
+
+```go
+// Serve static assets from build directory
+app.Static("/assets/", "./dist/assets")
+
+// Catch-all route to serve index.html for client-side routing
+app.GET("/{path...}", func(c *kern.Context) {
+    http.ServeFile(c.Response, c.Request, "./dist/index.html")
+})
+```
+
+## Structuring Large Projects
+
+For larger applications, separation of concerns is key.
+
+```text
+cmd/
+  api/
+    main.go
+internal/
+  handlers/
+    user.go
+    auth.go
+  middleware/
+    auth.go
+  models/
+    user.go
+```
+
+In `main.go`:
+
+```go
+func main() {
+    app := kern.Default()
+
+    // Register routes using handlers from internal packages
+    handlers.RegisterUserRoutes(app.Group("/users"))
+    handlers.RegisterAuthRoutes(app.Group("/auth"))
+
+    app.Run(":8080")
+}
+```
+
+## Error Handling
+
+### Structured JSON Errors
+
+Return consistent error responses across your API:
+
+```go
+type ErrorResponse struct {
+    Error   string `json:"error"`
+    Code    string `json:"code,omitempty"`
+    Details any    `json:"details,omitempty"`
+}
+
+func handleError(c *kern.Context, status int, message string) {
+    c.JSON(status, ErrorResponse{Error: message})
+}
+
+// Usage
+if user == nil {
+    handleError(c, 404, "User not found")
+    return
+}
+```
+
+### Panic Recovery with Custom Handler
+
+Beyond the built-in Recovery middleware, handle panics gracefully:
+
+```go
+app.Use(func(next http.Handler) http.Handler {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        defer func() {
+            if err := recover(); err != nil {
+                log.Printf("Panic recovered: %v", err)
+                w.Header().Set("Content-Type", "application/json")
+                w.WriteHeader(http.StatusInternalServerError)
+                json.NewEncoder(w).Encode(map[string]string{
+                    "error": "Internal server error",
+                })
+            }
+        }()
+        next.ServeHTTP(w, r)
+    })
+})
+```
+
+## Rate Limiting
+
+Simple in-memory rate limiting middleware:
+
+```go
+func RateLimiter(requests int, window time.Duration) kern.MiddlewareFunc {
+    type client struct {
+        count     int
+        resetTime time.Time
+    }
+    
+    var (
+        clients = make(map[string]*client)
+        mu      sync.Mutex
+    )
+    
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            ip := r.RemoteAddr
+            
+            mu.Lock()
+            c, exists := clients[ip]
+            now := time.Now()
+            
+            if !exists || now.After(c.resetTime) {
+                clients[ip] = &client{1, now.Add(window)}
+                mu.Unlock()
+                next.ServeHTTP(w, r)
+                return
+            }
+            
+            if c.count >= requests {
+                mu.Unlock()
+                http.Error(w, "Too many requests", http.StatusTooManyRequests)
+                return
+            }
+            
+            c.count++
+            mu.Unlock()
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+
+// Usage
+app.Use(RateLimiter(100, time.Minute))
+```
+
+## Request Logging
+
+### JSON Structured Logging
+
+```go
+import (
+    "encoding/json"
+    "time"
+)
+
+type logEntry struct {
+    Method   string        `json:"method"`
+    Path     string        `json:"path"`
+    Duration time.Duration `json:"duration_ms"`
+}
+
+func JSONLogger() kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            start := time.Now()
+            
+            next.ServeHTTP(w, r)
+            
+            entry := logEntry{
+                Method:   r.Method,
+                Path:     r.URL.Path,
+                Duration: time.Since(start),
+            }
+            
+            if data, err := json.Marshal(entry); err == nil {
+                log.Println(string(data))
+            }
+        })
+    }
+}
+```
+
+## Observability for Request Guards and Sessions
+
+### Track `RequestGuard` deny path
+
+When a `RequestGuard` rejects a request, it returns early with the configured status and message.
+Wrap guarded routes with a tiny status recorder to count rejects in logs or metrics.
+
+```go
+type statusRecorder struct {
+    http.ResponseWriter
+    status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+    r.status = code
+    r.ResponseWriter.WriteHeader(code)
+}
+
+func ObserveGuardDenies(route string) kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+            rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+            next.ServeHTTP(rec, req)
+            if rec.status == http.StatusBadRequest {
+                log.Printf("guard_deny route=%s method=%s path=%s", route, req.Method, req.URL.Path)
+            }
+        })
+    }
+}
+
+app.RouteWithMiddleware("POST", "/upload", uploadHandler,
+    ObserveGuardDenies("upload"),
+    middleware.RequestGuard(middleware.RequestGuardConfig{
+        RequireBody:       true,
+        RequireHeaders:    []string{"X-Tenant"},
+        AllowContentTypes: []string{"application/json"},
+    }),
+)
+```
+
+### Track session cookie rejection/decryption fallback
+
+If a session cookie is malformed, has an invalid signature, or cannot be decrypted with configured keys,
+the middleware starts a fresh session instead of failing the request.
+Emit a signal when a session cookie is present but expected state is missing.
+
+```go
+app.Use(middleware.Session(middleware.SessionConfig{
+    SigningKey:    []byte("new-signing-key"),
+    VerifyKeys:    [][]byte{[]byte("old-signing-key")},
+    EncryptionKey: []byte("0123456789abcdef0123456789abcdef"),
+    DecryptKeys:   [][]byte{[]byte("abcdef0123456789abcdef0123456789")},
+}))
+
+app.GET("/me", func(c *kern.Context) {
+    rawCookie, _ := c.Cookie("_session")
+    session, ok := middleware.GetSession(c.Context())
+    if !ok {
+        c.NoContent(http.StatusInternalServerError)
+        return
+    }
+
+    userID, hasUser := session.Get("user_id")
+    if rawCookie != nil && !hasUser {
+        log.Printf("session_cookie_rejected path=%s", c.Request.URL.Path)
+        c.JSON(http.StatusUnauthorized, map[string]string{"error": "session expired"})
+        return
+    }
+
+    c.JSON(http.StatusOK, map[string]interface{}{"user_id": userID})
+})
+```
+
+Use this signal to alert on spikes after key rotation deploys.
+
+See runnable example: [`examples/observability/main.go`](../examples/observability/main.go)
+
+## Health Checks
+
+Simple health and readiness endpoints:
+
+```go
+app.GET("/health", func(c *kern.Context) {
+    c.JSON(200, map[string]string{"status": "ok"})
+})
+
+app.GET("/ready", func(c *kern.Context) {
+    // Add database, cache checks here
+    c.JSON(200, map[string]bool{
+        "database": true,
+        "cache":    true,
+    })
+})
+```
+
+## Configuration
+
+### Environment-Based Config
+
+```go
+type Config struct {
+    Port         string
+    ReadTimeout  time.Duration
+    WriteTimeout time.Duration
+    EnableDebug bool
+}
+
+func LoadConfig() *Config {
+    return &Config{
+        Port:         getEnv("PORT", "8080"),
+        ReadTimeout:  getDurationEnv("READ_TIMEOUT", 30*time.Second),
+        WriteTimeout: getDurationEnv("WRITE_TIMEOUT", 30*time.Second),
+        EnableDebug:  getEnv("DEBUG", "false") == "true",
+    }
+}
+
+func getEnv(key, defaultValue string) string {
+    if value := os.Getenv(key); value != "" {
+        return value
+    }
+    return defaultValue
+}
+```
+
+<Callout type="tip">
+    For more complete examples, check out the `examples` folder in the repository.
+</Callout>
+
+## Related Pages
+
+- [Getting Started](/docs/getting-started) for the first kern service
+- [Middleware](/docs/middleware) for middleware execution patterns
+- [Middleware Catalog](/docs/middleware-catalog) for first-party middleware inventory
+- [Architecture Flow](/docs/architecture-flow) for request/response lifecycle context
+
+## Next Step
+
+Start with [Production API Blueprint](/docs/recipes/production-api-blueprint), then pick the focused recipe page for your current concern.

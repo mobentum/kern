@@ -1,0 +1,49 @@
+---
+title: Middleware - Session
+description: Detailed guide to middleware.Session with signed cookies, key rotation, optional encryption, and secure session handling patterns.
+---
+
+# middleware.Session
+
+Provides signed cookie session management with optional encryption and key rotation.
+
+## Signature
+
+```go
+func Session(configs ...SessionConfig) kern.MiddlewareFunc
+```
+
+## Basic example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.Session(middleware.SessionConfig{
+    SigningKey: []byte("replace-with-strong-secret"),
+}))
+```
+
+## Rotation and encryption example
+
+```go
+app.Use(middleware.Session(middleware.SessionConfig{
+    SigningKey:    []byte("new-signing-key"),
+    VerifyKeys:    [][]byte{[]byte("old-signing-key")},
+    EncryptionKey: []byte("0123456789abcdef0123456789abcdef"),
+    DecryptKeys:   [][]byte{[]byte("abcdef0123456789abcdef0123456789")},
+}))
+```
+
+## Access in handler
+
+```go
+session, ok := middleware.GetSession(c.Context())
+if ok {
+    session.Set("user_id", "123")
+}
+```
+
+## Best practices
+
+- Rotate keys using `VerifyKeys` and `DecryptKeys` before cutover.
+- Use secure cookie settings in production environments.

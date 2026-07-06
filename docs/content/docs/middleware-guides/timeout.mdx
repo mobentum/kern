@@ -1,0 +1,32 @@
+---
+title: Middleware - Timeout
+description: Detailed guide to middleware.Timeout for request deadline control and runaway handler protection.
+---
+
+# middleware.Timeout
+
+Applies request timeout handling to prevent long-running requests from consuming resources indefinitely.
+
+## Signature
+
+```go
+func Timeout(configs ...TimeoutConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import (
+    "time"
+    "github.com/mobentum/kern/middleware"
+)
+
+app.Use(middleware.Timeout(middleware.TimeoutConfig{
+    Duration: 2 * time.Second,
+}))
+```
+
+## Best practices
+
+- Set timeouts per endpoint sensitivity.
+- Keep timeout responses consistent with your API error format.

@@ -1,0 +1,113 @@
+---
+title: Why kern - Architecture Review Brief
+description: One-page decision brief for evaluating kern against Fiber, chi, and raw net/http in architecture and principal engineer reviews.
+---
+
+# Why kern - Architecture Review Brief
+
+Use this brief when you need to justify framework choice in platform reviews, principal engineer discussions, or migration planning.
+
+## Executive Summary
+
+kern is a stdlib-native Go web framework designed for teams that want production controls and middleware depth without leaving `net/http` semantics.
+
+Positioning:
+- Compared to Fiber: kern favors standard library compatibility and operational predictability over absolute peak throughput.
+- Compared to chi: kern includes stronger first-party production controls so teams write less custom glue.
+
+## Decision Criteria
+
+Use these criteria when selecting between kern, Fiber, chi, or raw `net/http`:
+
+| Criterion | What to Ask | Why It Matters |
+|---|---|---|
+| Runtime compatibility | Do we need strict `net/http` behavior and middleware reuse? | Reduces integration risk across internal services and libraries |
+| Performance profile | Do we optimize for max raw throughput or balanced latency + safety controls? | Avoids choosing the wrong tool for the real bottleneck |
+| Production controls | How much policy logic do we want built-in versus custom? | Impacts delivery speed, consistency, and security posture |
+| Migration risk | Can we adopt incrementally without large rewrites? | Lowers rollout and regression risk |
+| Operability | Do we need route introspection, consistent middleware layering, clear failure-path observability? | Improves debugging, on-call, and incident response |
+
+## Technical Differentiators
+
+## 1) Stdlib-native core
+
+- Built on Go 1.22+ routing with `net/http` semantics.
+- Easier interoperability with existing handlers, middleware, reverse proxies, and tooling.
+
+## 2) Route-scoped controls
+
+- Route-level middleware APIs for fine-grained policies.
+- `RequestGuard` for per-route body/header/content-type constraints.
+- `ResponseLimit` prototype for per-route response-size constraints.
+
+## 3) Security and session hardening
+
+- Session signing key rotation (`VerifyKeys`).
+- Optional encrypted payloads (`EncryptionKey`) and decryption key rotation (`DecryptKeys`).
+- First-party security middleware set (CSRF, JWT, security headers, timeout, rate limiter, request ID, compression).
+
+## 4) Explicit performance tradeoffs
+
+- Baseline and middleware overhead are benchmarked and documented.
+- Teams can reason about policy cost (ns/op, B/op, allocs/op) before broad rollout.
+
+## 5) Operational clarity
+
+- Route naming/introspection and middleware layering patterns.
+- Failure-path observability examples for `RequestGuard` denies, `ResponseLimit` overflows, and session rejection scenarios during signing/encryption key rotation.
+
+## Tradeoff Matrix
+
+| Option | Strengths | Tradeoffs | Best Fit |
+|---|---|---|---|
+| kern | `net/http` compatibility + built-in production controls + measured policy overhead | Slightly less raw speed than fastest fasthttp paths in some scenarios | Teams prioritizing standard semantics, maintainability, and production safety |
+| Fiber | High throughput and strong ecosystem | Different runtime model (`fasthttp`) and semantic differences from stdlib | Workloads where peak throughput dominates and runtime divergence is acceptable |
+| chi | Minimal, clean router with broad adoption | More custom glue for sessions/guards/strict controls | Teams wanting minimal surface and custom assembly |
+| raw `net/http` | Maximum control and zero framework abstraction | Highest implementation burden for production features | Narrow services with very custom behavior and strong platform capacity |
+
+## Risks and Mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Team assumes kern is always fastest | Misaligned expectations in benchmark reviews | Frame choice as compatibility + safety + balanced performance, not absolute peak only |
+| Over-applying strict guards globally | Unnecessary latency/allocation tax | Apply strict controls route-by-route where needed |
+| Session key rotation done incorrectly | Auth/session regressions | Use staged rollout with `VerifyKeys` and `DecryptKeys` before key cutover |
+| Migration done in one large step | Hard-to-debug regressions | Migrate incrementally by route groups and re-benchmark hot paths |
+
+## Recommended Rollout Plan
+
+1. Baseline
+- Run tests and benchmark hot paths before framework-level changes.
+
+2. Incremental adoption
+- Keep route behavior stable.
+- Add middleware and guards per route group.
+
+3. Security and policy hardening
+- Enable strict parsing and route guards only on sensitive endpoints first.
+- Roll out session key rotation in staged manner.
+
+4. Validation
+- Re-run `go test ./...` and benchmark focused scenarios.
+- Track denial/error paths in logs/metrics.
+
+5. Broad rollout
+- Expand pattern to remaining routes once performance and behavior are validated.
+
+## Review Q&A (Principal Engineer)
+
+### Is kern the fastest framework available?
+
+Not in every benchmark. Fiber may lead in some raw scenarios. kern optimizes for strong `net/http` compatibility plus production controls with transparent overhead.
+
+### Why not use chi + custom middleware?
+
+You can. kern is chosen when teams want faster delivery and consistency for first-party controls (guards, sessions, strict parsing, hardened middleware) without assembling and maintaining all policy glue.
+
+### What is the migration risk?
+
+Lower than most runtime-divergent options because kern keeps stdlib HTTP semantics and supports staged adoption by route group.
+
+## Suggested Decision Statement
+
+Choose kern when your organization values `net/http` correctness, predictable operations, and first-party production controls, and is willing to trade some peak benchmark wins for lower integration risk and better long-term maintainability.

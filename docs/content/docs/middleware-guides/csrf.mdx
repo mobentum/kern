@@ -1,0 +1,27 @@
+---
+title: Middleware - CSRF
+description: Detailed guide to middleware.CSRF for double-submit token protection on browser-based state-changing routes.
+---
+
+# middleware.CSRF
+
+Protects state-changing requests using double-submit CSRF token strategy.
+
+## Signature
+
+```go
+func CSRF(configs ...CSRFConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.CSRF())
+```
+
+## Notes
+
+- Use on session/cookie-authenticated browser routes.
+- For pure token-based APIs without cookies, CSRF is usually unnecessary.

@@ -1,0 +1,26 @@
+---
+title: Middleware - Recovery
+description: Detailed guide to kern.Recovery middleware for panic-safe request handling in production Go services.
+---
+
+# kern.Recovery
+
+`kern.Recovery` catches panics in handlers or middleware and returns `500`.
+
+## Signature
+
+```go
+func Recovery() MiddlewareFunc
+```
+
+## Example
+
+```go
+app := kern.New()
+app.Use(kern.Recovery())
+```
+
+## Best practices
+
+- Always enable in production.
+- Keep it near the outer layer so most downstream panics are captured.

@@ -1,0 +1,46 @@
+<svg width="900" height="900" viewBox="0 0 900 900" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">kern cosmic energy stacked logo</title>
+  <desc id="desc">Cosmic energy orb with radiating pulses and glowing cyan core above kern wordmark.</desc>
+  <defs>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#22D3EE"/>
+      <stop offset="60%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#2E1065" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#4C1D95" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(450 300)">
+    <!-- Outer glow -->
+    <circle cx="0" cy="0" r="160" fill="url(#glow)" opacity="0.4"/>
+    <!-- Energy rings -->
+    <circle cx="0" cy="0" r="100" fill="none" stroke="#A78BFA" stroke-width="8" opacity="0.7"/>
+    <circle cx="0" cy="0" r="130" fill="none" stroke="#6366F1" stroke-width="5" opacity="0.5"/>
+    <!-- Core orb -->
+    <circle cx="0" cy="0" r="68" fill="url(#core)"/>
+    <!-- Core highlight -->
+    <circle cx="-16" cy="-24" r="24" fill="#67E8F9" opacity="0.8"/>
+    <!-- Radiating beams -->
+    <line x1="0" y1="-140" x2="0" y2="-90" stroke="#22D3EE" stroke-width="12" stroke-linecap="round"/>
+    <line x1="0" y1="90" x2="0" y2="140" stroke="#22D3EE" stroke-width="12" stroke-linecap="round"/>
+    <line x1="-140" y1="0" x2="-90" y2="0" stroke="#22D3EE" stroke-width="12" stroke-linecap="round"/>
+    <line x1="90" y1="0" x2="140" y2="0" stroke="#22D3EE" stroke-width="12" stroke-linecap="round"/>
+    <!-- Diagonals -->
+    <line x1="-100" y1="-100" x2="-64" y2="-64" stroke="#A78BFA" stroke-width="8" stroke-linecap="round"/>
+    <line x1="64" y1="64" x2="100" y2="100" stroke="#A78BFA" stroke-width="8" stroke-linecap="round"/>
+    <line x1="100" y1="-100" x2="64" y2="-64" stroke="#A78BFA" stroke-width="8" stroke-linecap="round"/>
+    <line x1="-64" y1="64" x2="-100" y2="100" stroke="#A78BFA" stroke-width="8" stroke-linecap="round"/>
+    <!-- Orbit particles -->
+    <circle cx="0" cy="-155" r="10" fill="#67E8F9"/>
+    <circle cx="110" cy="-110" r="8" fill="#C084FC"/>
+    <circle cx="150" cy="20" r="7" fill="#818CF8"/>
+    <circle cx="100" cy="120" r="9" fill="#A78BFA"/>
+    <circle cx="-100" cy="120" r="9" fill="#A78BFA"/>
+    <circle cx="-150" cy="20" r="7" fill="#818CF8"/>
+    <circle cx="-110" cy="-110" r="8" fill="#C084FC"/>
+    <circle cx="55" cy="-145" r="6" fill="#67E8F9"/>
+  </g>
+  <text x="450" y="760" text-anchor="middle" fill="#1E293B" font-size="192" font-weight="700" font-family="Space Grotesk, Manrope, 'Plus Jakarta Sans', Sora, ui-sans-serif, system-ui, sans-serif">kern</text>
+</svg>

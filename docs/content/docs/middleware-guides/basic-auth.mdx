@@ -1,0 +1,27 @@
+---
+title: Middleware - BasicAuth
+description: Detailed guide to kern BasicAuth middleware for HTTP Basic authentication on admin and internal endpoints.
+---
+
+# kern.BasicAuth and kern.BasicAuthWithConfig
+
+Use Basic auth middleware for low-complexity protected endpoints.
+
+## Signatures
+
+```go
+func BasicAuth(username, password string) MiddlewareFunc
+func BasicAuthWithConfig(config BasicAuthConfig) MiddlewareFunc
+```
+
+## Example
+
+```go
+admin := app.Group("/admin")
+admin.Use(kern.BasicAuth("admin", "change-me"))
+```
+
+## Notes
+
+- Use only behind HTTPS.
+- Best for internal/admin surfaces or temporary protection.

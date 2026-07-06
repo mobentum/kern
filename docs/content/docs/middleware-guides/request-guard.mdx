@@ -1,0 +1,34 @@
+---
+title: Middleware - RequestGuard
+description: Detailed guide to middleware.RequestGuard for per-route request policy enforcement (body, headers, content type, and size).
+---
+
+# middleware.RequestGuard
+
+Applies strict request validation policies at route level.
+
+## Signature
+
+```go
+func RequestGuard(configs ...RequestGuardConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.RouteWithMiddleware("POST", "/upload", uploadHandler,
+    middleware.RequestGuard(middleware.RequestGuardConfig{
+        MaxBodyBytes:      8 << 20,
+        RequireBody:       true,
+        RequireHeaders:    []string{"X-Tenant"},
+        AllowContentTypes: []string{"application/json", "multipart/form-data"},
+    }),
+)
+```
+
+## Best practices
+
+- Apply only where strict policy is required.
+- Pair with observability for deny-path monitoring.

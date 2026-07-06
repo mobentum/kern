@@ -1,0 +1,33 @@
+---
+title: Middleware - ResponseLimit
+description: Detailed guide to middleware.ResponseLimit for per-route response-size enforcement and streaming safeguards.
+---
+
+# middleware.ResponseLimit
+
+Limits response body size for routes where it is applied.
+
+## Signature
+
+```go
+func ResponseLimit(configs ...ResponseLimitConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.RouteWithMiddleware("GET", "/export", exportHandler,
+    middleware.ResponseLimit(middleware.ResponseLimitConfig{
+        MaxBytes:   1 << 20,
+        StatusCode: 413,
+        Message:    "response too large",
+    }),
+)
+```
+
+## Notes
+
+- For streamed responses, writes beyond limit return `middleware.ErrResponseTooLarge`.
+- Best for bounded endpoints with strict payload policies.

@@ -1,0 +1,65 @@
+---
+title: Recipe - Observability Patterns
+description: Practical observability patterns for kern apps, including request guard deny tracking and session rejection signals.
+---
+
+# Observability Patterns
+
+This recipe focuses on high-signal events for operations and incident response.
+
+## 1) Correlate every request
+
+```go
+app.Use(middleware.RequestID())
+app.Use(kern.Logger(kern.LoggerConfig{Format: "json"}))
+```
+
+## 2) Track `RequestGuard` denies
+
+```go
+type statusRecorder struct {
+    http.ResponseWriter
+    status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+    r.status = code
+    r.ResponseWriter.WriteHeader(code)
+}
+
+func ObserveGuardDenies(route string) kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+            rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+            next.ServeHTTP(rec, req)
+            if rec.status == http.StatusBadRequest {
+                log.Printf("guard_deny route=%s method=%s path=%s", route, req.Method, req.URL.Path)
+            }
+        })
+    }
+}
+```
+
+## 3) Detect session-cookie rejection spikes
+
+```go
+app.GET("/me", func(c *kern.Context) {
+    rawCookie, _ := c.Cookie("_session")
+    session, ok := middleware.GetSession(c.Context())
+    if !ok {
+        c.NoContent(http.StatusInternalServerError)
+        return
+    }
+
+    _, hasUser := session.Get("user_id")
+    if rawCookie != nil && !hasUser {
+        log.Printf("session_cookie_rejected path=%s", c.Request.URL.Path)
+    }
+})
+```
+
+## 4) Alerting targets
+
+- `5xx_rate` and timeout error counts
+- `guard_deny` surge by endpoint
+- `session_cookie_rejected` surge after key rotation

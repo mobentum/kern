@@ -1,0 +1,33 @@
+---
+title: Middleware - BearerAuth
+description: Detailed guide to kern Bearer token authentication middleware with default and configurable validation paths.
+---
+
+# kern.BearerAuth and kern.BearerAuthWithConfig
+
+Use bearer auth middleware for simple token-protected APIs.
+
+## Signatures
+
+```go
+func BearerAuth(token string) MiddlewareFunc
+func BearerAuthWithConfig(config BearerAuthConfig) MiddlewareFunc
+```
+
+## Basic example
+
+```go
+app.Use(kern.BearerAuth("super-secret-token"))
+```
+
+## Route-group example
+
+```go
+api := app.Group("/api")
+api.Use(kern.BearerAuth("super-secret-token"))
+```
+
+## Notes
+
+- Prefer TLS for all token-protected routes.
+- For claim-based auth, use `middleware.JWT` from optional middleware package.

@@ -1,0 +1,262 @@
+---
+title: Getting Started
+description: Install the kern Go web framework, create your first API server, and learn the core setup for routing, middleware, and production-ready request handling.
+---
+
+import { Callout } from "fumadocs-ui/components/callout";
+
+## Prerequisites
+
+- **Go 1.22 or higher**: kern leverages Go 1.22's enhanced routing features.
+- Basic understanding of Go and HTTP concepts.
+- A Go development environment set up.
+
+<Callout type="warn">
+    kern requires **Go 1.22+** for the enhanced `net/http.ServeMux` pattern matching features. Please ensure your Go version is up to date (`go version`).
+</Callout>
+
+## Installation
+
+Install kern using `go get`:
+
+```bash
+go get github.com/mobentum/kern
+```
+
+This will download kern and add it to your `go.mod` file. Since kern has zero dependencies, the installation is instant.
+
+If you want structured logging via `slog` + zerolog, add the optional module:
+
+```bash
+go get github.com/mobentum/kern/extensions/xlog
+```
+
+If you want `.env` loading and environment binding, add the optional config module:
+
+```bash
+go get github.com/mobentum/kern/extensions/config
+```
+
+If you want OpenAPI JSON + Swagger UI endpoints, add the optional OpenAPI module:
+
+```bash
+go get github.com/mobentum/kern/extensions/openapi
+```
+
+## Your First Application
+
+### 1. Create a Project
+
+```bash
+mkdir myapp
+cd myapp
+go mod init myapp
+go get github.com/mobentum/kern
+```
+
+### 2. Write the Code
+
+Create a file named `main.go`:
+
+```go
+package main
+
+import (
+    "github.com/mobentum/kern"
+)
+
+func main() {
+    // Initialize a new kern application
+    app := kern.New()
+
+    // Add global middleware (optional but recommended)
+    app.Use(kern.Logger())
+    app.Use(kern.Recovery())
+
+    // Define a simple GET route
+    app.GET("/", func(c *kern.Context) {
+        c.Text(200, "Hello, World!")
+    })
+
+    // Define a route with a path parameter
+    app.GET("/hello/{name}", func(c *kern.Context) {
+        name := c.Param("name")
+        c.JSON(200, map[string]string{
+            "message": "Hello " + name,
+        })
+    })
+
+    // Start the server on port 8080
+    app.Run(":8080")
+}
+```
+
+### 3. Run the Application
+
+```bash
+go run main.go
+```
+
+You should see output indicating the server has started. Open your browser to `http://localhost:8080` to see "Hello, World!".
+
+Try visiting `http://localhost:8080/hello/kern` to see the JSON response:
+
+```json
+{"message": "Hello kern"}
+```
+
+## Why start with kern?
+
+- You want a Go web framework that stays close to `net/http`.
+- You want low framework overhead with predictable request/response behavior.
+- You want middleware, routing, and request helpers without taking on a large dependency tree.
+
+## Running with TLS
+
+kern makes it easy to serve over HTTPS using `RunTLS`, which is crucial for modern secure web applications.
+
+```go
+// Start an HTTPS server
+err := app.RunTLS(":8443", "cert.pem", "key.pem")
+if err != nil {
+    panic(err)
+}
+```
+
+## Using Defaults
+
+For a quick start with sensible defaults (Logger and Recovery middleware pre-configured), use `kern.Default()`:
+
+```go
+app := kern.Default() 
+// Equivalent to:
+// app := kern.New()
+// app.Use(kern.Logger())
+// app.Use(kern.Recovery())
+```
+
+## Structured Logging with xlog (Optional)
+
+`kern` supports `slog` directly in both app lifecycle logs and request logger middleware.
+
+```go
+package main
+
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xlog"
+)
+
+func main() {
+    app := kern.New(
+        kern.WithSlogLogger(xlog.NewLogger(xlog.Config{Format: "json"})),
+    )
+
+    app.Use(kern.Logger(kern.LoggerConfig{
+        SLogger: xlog.NewLogger(xlog.Config{Format: "console"}),
+        Fields: map[string]interface{}{
+            "service": "myapp",
+            "env":     "dev",
+        },
+    }))
+
+    app.GET("/", func(c *kern.Context) {
+        _ = c.Text(200, "ok")
+    })
+
+    _ = app.Run(":8080")
+}
+```
+
+## Configuration with config (Optional)
+
+Use the optional `config` module when you want `.env` file loading and typed environment access.
+
+```go
+package main
+
+import (
+    "github.com/mobentum/kern/extensions/config"
+)
+
+type Config struct {
+    Host string
+    Port int
+}
+
+func loadConfig() (*Config, error) {
+    loader, err := config.New(
+        config.WithPrefix("APP"),
+        config.WithDotEnv(".env"),
+    )
+    if err != nil {
+        return nil, err
+    }
+
+    port, err := loader.Int("PORT", 8080)
+    if err != nil {
+        return nil, err
+    }
+
+    return &Config{
+        Host: loader.String("HOST", "127.0.0.1"),
+        Port: port,
+    }, nil
+}
+```
+
+## OpenAPI with openapi (Optional)
+
+Use the optional `openapi` module when you want explicit API docs endpoints without reflection.
+
+```go
+package main
+
+import (
+    "net/http"
+
+    "github.com/mobentum/kern/extensions/openapi"
+)
+
+openapi.Register(app, openapi.Config{
+    Info: openapi.Info{Title: "My API", Version: "1.0.0"},
+    Routes: []openapi.Route{
+        {
+            Method:      http.MethodGet,
+            Path:        "/hello/{name}",
+            Summary:     "Get greeting",
+            OperationID: "getGreeting",
+            Tags:        []string{"greetings"},
+        },
+    },
+})
+
+// Docs endpoints:
+// - /openapi.json
+// - /docs
+```
+
+## What's Next?
+
+Now that you have your first app running:
+
+- **[Routing](/docs/routing)** - Learn about route groups, path parameters, and static files
+- **[Context API](/docs/context)** - Handle requests and responses
+- **[Middleware](/docs/middleware)** - Add authentication, logging, CORS, and more
+- **[Middleware Catalog](/docs/middleware-catalog)** - Browse first-party middleware options
+- **[Migration Guide](/docs/migration-guide)** - Adopt new routing and middleware capabilities safely
+- **[Examples](/docs)** - Check the `examples` folder for complete, runnable examples
+
+## FAQ
+
+### Is kern good for production Go services?
+
+Yes. kern includes routing, middleware support, request guards, structured logging integration, sessions, rate limiting, timeouts, and security headers for production workloads.
+
+### Do I need to learn a custom request model?
+
+No. kern keeps the familiar Go HTTP model and layers convenience helpers on top.
+
+### Where do I go after setup?
+
+The most useful next pages are [Routing](/docs/routing), [Context](/docs/context), [Middleware](/docs/middleware), and [Architecture Flow](/docs/architecture-flow).

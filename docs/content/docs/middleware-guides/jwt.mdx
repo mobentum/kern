@@ -1,0 +1,29 @@
+---
+title: Middleware - JWT
+description: Detailed guide to middleware.JWT for HS256 token validation and claims-aware route protection.
+---
+
+# middleware.JWT
+
+Validates HS256 JWT tokens and exposes claims to request context.
+
+## Signature
+
+```go
+func JWT(config JWTConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.JWT(middleware.JWTConfig{
+    Secret: []byte("replace-with-strong-secret"),
+}))
+```
+
+## Best practices
+
+- Validate issuer/audience when applicable.
+- Keep secret rotation strategy in place for production environments.

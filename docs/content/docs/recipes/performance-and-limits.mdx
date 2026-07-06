@@ -1,0 +1,43 @@
+---
+title: Recipe - Performance and Limits
+description: Throughput-oriented kern configuration patterns for compression, limits, and endpoint-specific controls.
+---
+
+# Performance and Limits
+
+Balance performance and safety by applying limits where they matter.
+
+## Global performance baseline
+
+```go
+app.Use(middleware.Gzip())
+app.Use(middleware.Timeout(middleware.TimeoutConfig{Duration: 2 * time.Second}))
+app.Use(middleware.RateLimiter())
+```
+
+## Route-specific strictness
+
+```go
+app.RouteWithMiddleware("GET", "/export", exportHandler,
+    middleware.ResponseLimit(middleware.ResponseLimitConfig{
+        MaxBytes:   1 << 20,
+        StatusCode: 413,
+        Message:    "response too large",
+    }),
+)
+```
+
+```go
+app.RouteWithMiddleware("POST", "/ingest", ingestHandler,
+    middleware.RequestGuard(middleware.RequestGuardConfig{
+        MaxBodyBytes:      4 << 20,
+        AllowContentTypes: []string{"application/json"},
+    }),
+)
+```
+
+## Operational checks
+
+- Monitor response-limit rejections by route
+- Track timeout counts and p95/p99 latency
+- Confirm compression efficacy for large JSON payloads

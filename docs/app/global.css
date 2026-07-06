@@ -1,0 +1,31 @@
+@import "tailwindcss";
+@import "fumadocs-ui/css/purple.css";
+@import "fumadocs-ui/css/preset.css";
+
+:root {
+	--kern-bg-light: radial-gradient(circle at 8% -10%, rgba(168, 85, 247, 0.12), transparent 35%),
+		radial-gradient(circle at 92% 4%, rgba(99, 102, 241, 0.12), transparent 32%),
+		radial-gradient(circle at 60% 100%, rgba(34, 211, 238, 0.1), transparent 40%);
+	--kern-bg-dark: radial-gradient(circle at 8% -10%, rgba(168, 85, 247, 0.2), transparent 35%),
+		radial-gradient(circle at 92% 4%, rgba(99, 102, 241, 0.18), transparent 32%),
+		radial-gradient(circle at 60% 100%, rgba(34, 211, 238, 0.14), transparent 40%);
+}
+
+html,
+body {
+	min-height: 100%;
+}
+
+body {
+	background-image: var(--kern-bg-light);
+	background-attachment: fixed;
+}
+
+html.dark body,
+[data-theme="dark"] body {
+	background-image: var(--kern-bg-dark);
+}
+
+::selection {
+	background: rgba(168, 85, 247, 0.28);
+}

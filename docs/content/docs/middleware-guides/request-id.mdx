@@ -1,0 +1,29 @@
+---
+title: Middleware - RequestID
+description: Detailed guide to middleware.RequestID for request correlation, tracing, and log stitching.
+---
+
+# middleware.RequestID
+
+Adds and propagates `X-Request-ID` for each request.
+
+## Signature
+
+```go
+func RequestID() kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.RequestID())
+app.Use(kern.Logger())
+```
+
+## Behavior
+
+- Reuses incoming request ID when present.
+- Generates a random ID when missing.
+- Sets `X-Request-ID` on response.

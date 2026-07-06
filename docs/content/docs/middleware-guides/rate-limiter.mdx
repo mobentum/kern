@@ -1,0 +1,27 @@
+---
+title: Middleware - RateLimiter
+description: Detailed guide to middleware.RateLimiter with fixed-window controls and practical API protection examples.
+---
+
+# middleware.RateLimiter
+
+Limits request rates using a fixed-window strategy.
+
+## Signature
+
+```go
+func RateLimiter(configs ...RateLimiterConfig) kern.MiddlewareFunc
+```
+
+## Example
+
+```go
+import "github.com/mobentum/kern/middleware"
+
+app.Use(middleware.RateLimiter())
+```
+
+## Notes
+
+- Apply stricter limits to login, token, and expensive compute endpoints.
+- Combine with request ID and logger middleware for incident visibility.

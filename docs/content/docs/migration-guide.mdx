@@ -1,0 +1,133 @@
+---
+title: Migration Guide
+description: Upgrade existing Go services to newer kern routing, middleware, sessions, request guards, and performance-oriented helper APIs with minimal disruption.
+---
+
+# Migration Guide
+
+This guide summarizes notable additions and how to adopt them safely.
+
+If you are moving from plain `net/http`, older kern code, or ad hoc middleware stacks, this page helps you adopt newer kern capabilities incrementally.
+
+## 1) Route naming and introspection
+
+If you previously tracked routes externally, move to built-in route metadata:
+
+```go
+app.GETNamed("users_show", "/users/{id}", handler)
+
+route, ok := app.RouteByName("users_show")
+routes := app.Routes()
+```
+
+No breaking changes: existing `GET/POST/...` APIs remain valid.
+
+## 2) Typed path constraints
+
+When upgrading routes that expect numeric/slug identifiers, prefer constrained routes:
+
+```go
+app.RouteWithConstraints("GET", "/users/{id}", kern.PathConstraints{
+    "id": kern.UintPathConstraint,
+}, handler)
+```
+
+This returns `404` when constraints fail, which keeps route behavior predictable.
+
+## 3) Authentication middleware
+
+You can now choose between:
+- `kern.BearerAuth(...)`
+- `kern.BasicAuth(...)`
+
+Or use configurable variants for custom validators.
+
+## 4) Security headers
+
+Add first-party helmet-style headers in optional middleware package:
+
+```go
+app.Use(middleware.SecurityHeaders())
+```
+
+Use config override for CSP/Permissions policy per app requirements.
+
+## 5) Session middleware
+
+Move ad hoc cookie/session code to first-party signed-cookie sessions:
+
+```go
+app.Use(middleware.Session(middleware.SessionConfig{
+    SigningKey: []byte("replace-with-strong-secret"),
+}))
+```
+
+Inside handlers:
+
+```go
+session, ok := middleware.GetSession(c.Context())
+if ok {
+    session.Set("user_id", "123")
+}
+```
+
+For hardening and key rotation:
+
+```go
+app.Use(middleware.Session(middleware.SessionConfig{
+    SigningKey:    []byte("new-signing-key"),
+    VerifyKeys:    [][]byte{[]byte("old-signing-key")},
+    EncryptionKey: []byte("32-byte-encryption-key........"),
+    DecryptKeys:   [][]byte{[]byte("old-32-byte-encryption-key....")},
+}))
+```
+
+## 6) Query hot-path helpers
+
+For handlers reading multiple query fields repeatedly, switch from repeated `Query(...)` to consolidated helpers:
+
+```go
+q, page := c.QueryPairDefaultRaw("q", "", "page", "1")
+```
+
+Use decoded variants when URL decoding semantics are required.
+
+## 7) Strict request parsing and per-route guards
+
+Enable strict query parsing when you want malformed query strings to fail fast:
+
+```go
+app := kern.New(kern.WithStrictRequestParsing(true))
+```
+
+Apply route-level guard middleware where you need stricter policies:
+
+```go
+app.RouteWithMiddleware("POST", "/upload", uploadHandler,
+    middleware.RequestGuard(middleware.RequestGuardConfig{
+        MaxBodyBytes:      8 << 20,
+        RequireBody:       true,
+        RequireHeaders:    []string{"X-Tenant"},
+        AllowContentTypes: []string{"application/json", "multipart/form-data"},
+    }),
+)
+```
+
+## Migration checklist
+
+- Keep existing routes and middleware running.
+- Migrate endpoints incrementally to constrained routes.
+- Add session middleware only where stateful behavior is needed.
+- Rotate session signing/encryption keys by introducing `VerifyKeys` and `DecryptKeys` before key cutover.
+- Add security headers globally, then tune CSP/policies.
+- Re-run `go test ./...` and benchmark hot paths after each migration step.
+
+## FAQ
+
+### Can I migrate gradually?
+
+Yes. kern keeps the existing HTTP model intact, so you can introduce middleware, route metadata, constraints, and request guards one endpoint group at a time.
+
+### What should I validate after migrating?
+
+Always run tests, verify middleware order, confirm request/response semantics, and benchmark hot paths when changing parsing, sessions, or route helpers.
