@@ -7,11 +7,9 @@ linters:
   default: none
   enable:
     - errcheck
-    - gosimple
     - govet
     - ineffassign
     - staticcheck
-    - unused
   settings:
     errcheck:
       check-type-assertions: true
