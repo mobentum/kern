@@ -1,11 +1,10 @@
+version: "2"
+
 run:
   timeout: 5m
 
-issues:
-  exclude-use-default: false
-
 linters:
-  disable-all: true
+  default: none
   enable:
     - errcheck
     - gosimple
@@ -14,8 +13,10 @@ linters:
     - staticcheck
     - typecheck
     - unused
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
 
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-    check-blank: false
+issues:
+  exclude-use-default: false
