@@ -8,7 +8,7 @@ export function HeroSection() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.15),transparent_50%)]"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(34,211,238,0.08),transparent_50%)]"></div>
 
-            <div className="relative max-w-7xl mx-auto px-6 lg:px-8 py-20 grid lg:grid-cols-2 gap-16 items-center">
+            <div className="relative max-w-7xl mx-auto px-6 lg:px-8 pt-8 pb-20 grid lg:grid-cols-2 gap-16 items-center">
                 {/* Left: Text Content */}
                 <div className="space-y-8">
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-sm font-medium">
