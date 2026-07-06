@@ -48,11 +48,11 @@ func main() {
 			return
 		}
 		session.Set("user_id", "demo-user")
-		c.JSON(http.StatusOK, map[string]string{"status": "logged_in"})
+		_ = c.JSON(http.StatusOK, map[string]string{"status": "logged_in"})
 	})
 
 	app.RouteWithMiddleware(http.MethodPost, "/api/upload", func(c *kern.Context) {
-		c.JSON(http.StatusAccepted, map[string]string{"status": "accepted"})
+		_ = c.JSON(http.StatusAccepted, map[string]string{"status": "accepted"})
 	},
 		ObserveGuardDenies("upload"),
 		middleware.RequestGuard(middleware.RequestGuardConfig{
@@ -74,15 +74,15 @@ func main() {
 		userID, hasUser := session.Get("user_id")
 		if rawCookie != nil && !hasUser {
 			log.Printf("session_cookie_rejected path=%s", c.Request.URL.Path)
-			c.JSON(http.StatusUnauthorized, map[string]string{"error": "session expired"})
+			_ = c.JSON(http.StatusUnauthorized, map[string]string{"error": "session expired"})
 			return
 		}
 		if !hasUser {
-			c.JSON(http.StatusUnauthorized, map[string]string{"error": "not logged in"})
+			_ = c.JSON(http.StatusUnauthorized, map[string]string{"error": "not logged in"})
 			return
 		}
 
-		c.JSON(http.StatusOK, map[string]interface{}{"user_id": userID})
+		_ = c.JSON(http.StatusOK, map[string]interface{}{"user_id": userID})
 	})
 
 	log.Println("Server running at http://localhost:8000")

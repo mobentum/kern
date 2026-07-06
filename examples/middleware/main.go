@@ -20,7 +20,7 @@ func main() {
 
 	// public routes
 	app.GET("/", func(c *kern.Context) {
-		c.JSON(200, map[string]string{
+		_ = c.JSON(200, map[string]string{
 			"message": "Welcome to the API",
 		})
 	})
@@ -29,11 +29,11 @@ func main() {
 	api := app.Group("/api", kern.CORS([]string{"*"}))
 	{
 		api.GET("/health", func(c *kern.Context) {
-			c.JSON(200, map[string]string{"status": "healthy"})
+			_ = c.JSON(200, map[string]string{"status": "healthy"})
 		})
 
 		api.GET("/products", func(c *kern.Context) {
-			c.JSON(200, []map[string]interface{}{
+			_ = c.JSON(200, []map[string]interface{}{
 				{"id": 1, "name": "Product 1"},
 				{"id": 2, "name": "Product 2"},
 			})

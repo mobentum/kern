@@ -35,7 +35,7 @@ func TestApp_RouteMethods(t *testing.T) {
 		t.Run(method, func(t *testing.T) {
 			app := New()
 			app.Route(method, "/test", func(c *Context) {
-				c.Text(200, "ok")
+				_ = c.Text(200, "ok")
 			})
 
 			req := newRequest(method, "/test")
@@ -51,7 +51,7 @@ func TestApp_RouteMethods(t *testing.T) {
 func TestApp_PathParameters(t *testing.T) {
 	app := New()
 	app.GET("/users/{id}/posts/{postId}", func(c *Context) {
-		c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
+		_ = c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
 	})
 
 	req := newRequest(http.MethodGet, "/users/123/posts/456")
@@ -111,7 +111,7 @@ func TestApp_Static(t *testing.T) {
 func TestApp_404(t *testing.T) {
 	app := New()
 	app.GET("/exists", func(c *Context) {
-		c.Text(200, "found")
+		_ = c.Text(200, "found")
 	})
 
 	req := newRequest(http.MethodGet, "/notfound")
@@ -386,7 +386,7 @@ func TestServer_MaxHeaderBytes_RejectsLargeHeaders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("listen failed: %v", err)
 	}
-	defer ln.Close()
+	defer func() { _ = ln.Close() }()
 
 	server := &http.Server{
 		Handler:        app,
@@ -396,13 +396,13 @@ func TestServer_MaxHeaderBytes_RejectsLargeHeaders(t *testing.T) {
 	go func() {
 		_ = server.Serve(ln)
 	}()
-	defer server.Close()
+	defer func() { _ = server.Close() }()
 
 	conn, err := net.Dial("tcp", ln.Addr().String())
 	if err != nil {
 		t.Fatalf("dial failed: %v", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	largeHeader := strings.Repeat("a", 12*1024)
 	_, err = fmt.Fprintf(conn, "GET / HTTP/1.1\r\nHost: test\r\nX-Large: %s\r\n\r\n", largeHeader)

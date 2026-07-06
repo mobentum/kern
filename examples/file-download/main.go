@@ -11,7 +11,7 @@ func main() {
 	app := kern.Default()
 
 	app.GET("/", func(c *kern.Context) {
-		c.HTML(200, `
+		_ = c.HTML(200, `
 			<!DOCTYPE html>
 			<html>
 			<head>
@@ -47,7 +47,7 @@ func main() {
 		filename := c.Param("filename")
 		err := c.DownloadFile("./files/"+filename, filename)
 		if err != nil {
-			c.Text(404, "File not found: %s", err.Error())
+			_ = c.Text(404, "File not found: %s", err.Error())
 		}
 	})
 
@@ -55,14 +55,14 @@ func main() {
 		filename := c.Param("filename")
 		err := c.StreamFile("./files/" + filename)
 		if err != nil {
-			c.Text(404, "File not found: %s", err.Error())
+			_ = c.Text(404, "File not found: %s", err.Error())
 		}
 	})
 
 	app.GET("/files/{path...}", func(c *kern.Context) {
 		err := c.ServeStatic("./files")
 		if err != nil {
-			c.Text(404, "File not found")
+			_ = c.Text(404, "File not found")
 		}
 	})
 

@@ -44,7 +44,7 @@ func (gw *gzipWriter) Write(data []byte) (int, error) {
 	gw.Header().Del("Content-Length")
 
 	gz := gzip.NewWriter(gw.ResponseWriter)
-	defer gz.Close()
+	defer func() { _ = gz.Close() }()
 
 	return gz.Write(data)
 }

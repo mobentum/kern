@@ -19,28 +19,28 @@ func TestIntegration(t *testing.T) {
 	users := []User{{ID: 1, Name: "Alice"}, {ID: 2, Name: "Bob"}}
 
 	app.GET("/api/users", func(c *Context) {
-		c.JSON(200, users)
+		_ = c.JSON(200, users)
 	})
 
 	app.GET("/api/users/{id}", func(c *Context) {
 		id := c.Param("id")
 		for _, u := range users {
 			if u.ID == 1 && id == "1" || u.ID == 2 && id == "2" {
-				c.JSON(200, u)
+				_ = c.JSON(200, u)
 				return
 			}
 		}
-		c.JSON(404, map[string]string{"error": "not found"})
+		_ = c.JSON(404, map[string]string{"error": "not found"})
 	})
 
 	app.POST("/api/users", func(c *Context) {
 		var u User
 		if err := c.DecodeJSON(&u); err != nil {
-			c.JSON(400, map[string]string{"error": err.Error()})
+			_ = c.JSON(400, map[string]string{"error": err.Error()})
 			return
 		}
 		users = append(users, u)
-		c.JSON(201, u)
+		_ = c.JSON(201, u)
 	})
 
 	t.Run("GET all users", func(t *testing.T) {
@@ -52,7 +52,7 @@ func TestIntegration(t *testing.T) {
 		}
 
 		var got []User
-		json.Unmarshal(res.Body.Bytes(), &got)
+		_ = json.Unmarshal(res.Body.Bytes(), &got)
 		if len(got) != 2 {
 			t.Errorf("got %d users, want 2", len(got))
 		}
@@ -67,7 +67,7 @@ func TestIntegration(t *testing.T) {
 		}
 
 		var got User
-		json.Unmarshal(res.Body.Bytes(), &got)
+		_ = json.Unmarshal(res.Body.Bytes(), &got)
 		if got.Name != "Alice" {
 			t.Errorf("got %s, want Alice", got.Name)
 		}

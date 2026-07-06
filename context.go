@@ -278,7 +278,7 @@ func (c *Context) QueryBool(name string, defaultValue bool) (bool, error) {
 func (c *Context) Form(name string) string {
 	// parse form values only once. its values cached by default once parsed
 	if !c.formParsed {
-		c.Request.ParseForm()
+		_ = c.Request.ParseForm()
 		c.formParsed = true
 	}
 
@@ -457,7 +457,7 @@ func (c *Context) DecodeJSON(data interface{}) error {
 		return ErrEmptyRequestBody
 	}
 
-	bufPtr := jsonBodyBufferPool.Get().(*[]byte)
+	bufPtr, _ := jsonBodyBufferPool.Get().(*[]byte)
 	buf := (*bufPtr)[:0]
 	if contentLength := c.Request.ContentLength; contentLength > 0 && int64(cap(buf)) < contentLength {
 		buf = make([]byte, 0, contentLength)
@@ -884,13 +884,13 @@ func (c *Context) SaveFile(file *multipart.FileHeader, path string) error {
 	if err != nil {
 		return err
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	dest, err := os.Create(path)
 	if err != nil {
 		return err
 	}
-	defer dest.Close()
+	defer func() { _ = dest.Close() }()
 
 	_, err = io.Copy(dest, src)
 	return err
@@ -902,7 +902,7 @@ func (c *Context) StreamFile(filepath string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -933,7 +933,7 @@ func (c *Context) DownloadFile(filepath string, downloadName string) error {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	stat, err := file.Stat()
 	if err != nil {
@@ -1003,7 +1003,7 @@ func (c *Context) serveRange(file *os.File, stat os.FileInfo, rangeHeader, conte
 
 	contentLength := end - start + 1
 
-	file.Seek(start, io.SeekStart)
+	_, _ = file.Seek(start, io.SeekStart)
 
 	c.SetHeader("Content-Type", contentType)
 	c.SetHeader("Content-Length", strconv.FormatInt(contentLength, 10))
@@ -1060,7 +1060,8 @@ func bindValues(values url.Values, tagName string, data interface{}) error {
 func getBindPlan(typeOf reflect.Type, tagName string) bindPlan {
 	key := bindPlanKey{typeOf: typeOf, tagName: tagName}
 	if plan, ok := bindPlanCache.Load(key); ok {
-		return plan.(bindPlan)
+		p, _ := plan.(bindPlan)
+		return p
 	}
 
 	fields := make([]bindFieldPlan, 0, typeOf.NumField())
@@ -1088,12 +1089,13 @@ func getBindPlan(typeOf reflect.Type, tagName string) bindPlan {
 
 	plan := bindPlan{fields: fields}
 	actual, _ := bindPlanCache.LoadOrStore(key, plan)
-	return actual.(bindPlan)
+	p, _ := actual.(bindPlan)
+	return p
 }
 
 func validateBindTarget(data interface{}) (reflect.Value, error) {
 	v := reflect.ValueOf(data)
-	if !v.IsValid() || v.Kind() != reflect.Ptr || v.IsNil() {
+	if !v.IsValid() || v.Kind() != reflect.Pointer || v.IsNil() {
 		return reflect.Value{}, ErrInvalidBindTarget
 	}
 
@@ -1295,7 +1297,7 @@ func validateFieldRules(fieldName string, value reflect.Value, ruleTag string) V
 }
 
 func isEmptyValidationValue(v reflect.Value) bool {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return true
 		}
@@ -1321,7 +1323,7 @@ func isEmptyValidationValue(v reflect.Value) bool {
 }
 
 func validationLength(v reflect.Value) int {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return 0
 		}
@@ -1337,7 +1339,7 @@ func validationLength(v reflect.Value) int {
 }
 
 func validationNumericOrLength(v reflect.Value) float64 {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return 0
 		}
@@ -1359,7 +1361,7 @@ func validationNumericOrLength(v reflect.Value) float64 {
 }
 
 func valueToString(v reflect.Value) string {
-	for v.Kind() == reflect.Ptr {
+	for v.Kind() == reflect.Pointer {
 		if v.IsNil() {
 			return ""
 		}
@@ -1560,7 +1562,7 @@ func decodeQueryComponent(value string) (string, error) {
 }
 
 func compileBindFieldValueFunc(typeOf reflect.Type) bindFieldValueFunc {
-	if typeOf.Kind() == reflect.Ptr {
+	if typeOf.Kind() == reflect.Pointer {
 		elemType := typeOf.Elem()
 		elemBinder := compileBindFieldValueFunc(elemType)
 		return func(field reflect.Value, values []string) error {
@@ -1601,7 +1603,7 @@ func compileBindFieldValueFunc(typeOf reflect.Type) bindFieldValueFunc {
 }
 
 func compileBindScalarStringFunc(typeOf reflect.Type) func(field reflect.Value, value string) error {
-	if typeOf.Kind() == reflect.Ptr {
+	if typeOf.Kind() == reflect.Pointer {
 		elemType := typeOf.Elem()
 		elemBinder := compileBindScalarStringFunc(elemType)
 		return func(field reflect.Value, value string) error {

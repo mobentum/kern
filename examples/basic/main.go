@@ -12,14 +12,14 @@ func main() {
 
 	// plain text response
 	app.GET("/", func(c *kern.Context) {
-		c.Text(200, "Welcome to the basic tutorial")
+		_ = c.Text(200, "Welcome to the basic tutorial")
 	})
 
 	// json response
 	app.GET("/hello/{name}", func(c *kern.Context) {
 		name := c.Param("name")
 
-		c.JSON(200, map[string]any{
+		_ = c.JSON(200, map[string]any{
 			"message": "Hello " + name,
 		})
 	})

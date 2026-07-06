@@ -137,9 +137,7 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 					attrs = append(attrs, slog.String("request_id", requestID))
 				}
 
-				for _, attr := range mapToSlogAttrs(config.Fields) {
-					attrs = append(attrs, attr)
-				}
+				attrs = append(attrs, mapToSlogAttrs(config.Fields)...)
 
 				config.SLogger.LogAttrs(r.Context(), slog.LevelInfo, "http_request", attrs...)
 				return

@@ -51,18 +51,18 @@ func getTodos(c *kern.Context) {
 		list = append(list, todo)
 	}
 
-	c.JSON(200, list)
+	_ = c.JSON(200, list)
 }
 
 func createTodo(c *kern.Context) {
 	var todo Todo
 	if err := c.DecodeJSON(&todo); err != nil {
-		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+		_ = c.JSON(400, map[string]string{"error": "Invalid JSON"})
 		return
 	}
 
 	if todo.Title == "" {
-		c.JSON(400, map[string]string{"error": "Title is required"})
+		_ = c.JSON(400, map[string]string{"error": "Title is required"})
 		return
 	}
 
@@ -73,7 +73,7 @@ func createTodo(c *kern.Context) {
 	store.counter++
 	store.todos[todo.ID] = &todo
 
-	c.JSON(201, todo)
+	_ = c.JSON(201, todo)
 }
 
 func getTodo(c *kern.Context) {
@@ -84,11 +84,11 @@ func getTodo(c *kern.Context) {
 
 	todo, exists := store.todos[id]
 	if !exists {
-		c.JSON(404, map[string]string{"error": "Todo not found"})
+		_ = c.JSON(404, map[string]string{"error": "Todo not found"})
 		return
 	}
 
-	c.JSON(200, todo)
+	_ = c.JSON(200, todo)
 }
 
 func updateTodo(c *kern.Context) {
@@ -96,7 +96,7 @@ func updateTodo(c *kern.Context) {
 
 	var updated Todo
 	if err := c.DecodeJSON(&updated); err != nil {
-		c.JSON(400, map[string]string{"error": "Invalid JSON"})
+		_ = c.JSON(400, map[string]string{"error": "Invalid JSON"})
 		return
 	}
 
@@ -105,7 +105,7 @@ func updateTodo(c *kern.Context) {
 
 	todo, exists := store.todos[id]
 	if !exists {
-		c.JSON(404, map[string]string{"error": "Todo not found"})
+		_ = c.JSON(404, map[string]string{"error": "Todo not found"})
 		return
 	}
 
@@ -114,7 +114,7 @@ func updateTodo(c *kern.Context) {
 	}
 	todo.Completed = updated.Completed
 
-	c.JSON(200, todo)
+	_ = c.JSON(200, todo)
 }
 
 func deleteTodo(c *kern.Context) {
@@ -124,12 +124,12 @@ func deleteTodo(c *kern.Context) {
 	defer store.mu.Unlock()
 
 	if _, exists := store.todos[id]; !exists {
-		c.JSON(404, map[string]string{"error": "Todo not found"})
+		_ = c.JSON(404, map[string]string{"error": "Todo not found"})
 		return
 	}
 
 	delete(store.todos, id)
-	c.JSON(200, map[string]string{"message": "Todo deleted successfully"})
+	_ = c.JSON(200, map[string]string{"message": "Todo deleted successfully"})
 }
 
 func parseID(s string) int {

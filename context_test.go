@@ -86,7 +86,7 @@ func TestContext_SetLogger_OverridesPerRequest(t *testing.T) {
 func TestContext_Query(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "%s", c.Query("key"))
+		_ = c.Text(200, "%s", c.Query("key"))
 	})
 
 	req := newRequest(http.MethodGet, "/test?key=value")
@@ -272,7 +272,7 @@ func TestContext_QueryPairRaw_DoesNotDecode(t *testing.T) {
 func TestContext_Param(t *testing.T) {
 	app := New()
 	app.GET("/users/{id}/posts/{postId}", func(c *Context) {
-		c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
+		_ = c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
 	})
 
 	req := newRequest(http.MethodGet, "/users/123/posts/456")
@@ -286,7 +286,7 @@ func TestContext_Param(t *testing.T) {
 func TestContext_GetHeader(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "%s", c.GetHeader("X-Custom"))
+		_ = c.Text(200, "%s", c.GetHeader("X-Custom"))
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -367,7 +367,7 @@ func TestContext_HeaderBool(t *testing.T) {
 func TestContext_JSON(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.JSON(200, map[string]string{"message": "hello"})
+		_ = c.JSON(200, map[string]string{"message": "hello"})
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -425,7 +425,7 @@ func TestContext_Accepted(t *testing.T) {
 func TestContext_Text(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "Hello %s", "World")
+		_ = c.Text(200, "Hello %s", "World")
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -480,7 +480,7 @@ func TestContext_SetCookie(t *testing.T) {
 	app := New()
 	app.GET("/test", func(c *Context) {
 		c.SetCookie(&http.Cookie{Name: "session", Value: "abc"})
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := newRequest(http.MethodGet, "/test")

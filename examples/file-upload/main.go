@@ -20,7 +20,7 @@ func main() {
 
 	// upload form
 	app.GET("/", func(c *kern.Context) {
-		c.HTML(200, `
+		_ = c.HTML(200, `
 			<!DOCTYPE html>
 			<html>
 			<head>
@@ -50,7 +50,7 @@ func main() {
 		// get file metadata
 		file, err := c.File("file")
 		if err != nil {
-			c.JSON(400, map[string]string{"error": "No file uploaded"})
+			_ = c.JSON(400, map[string]string{"error": "No file uploaded"})
 			return
 		}
 
@@ -61,11 +61,11 @@ func main() {
 
 		// save file
 		if err := c.SaveFile(file, dst); err != nil {
-			c.JSON(500, map[string]string{"error": "Failed to save file"})
+			_ = c.JSON(500, map[string]string{"error": "Failed to save file"})
 			return
 		}
 
-		c.JSON(200, map[string]interface{}{
+		_ = c.JSON(200, map[string]interface{}{
 			"message":  "File uploaded successfully",
 			"filename": filename,
 			"size":     file.Size,

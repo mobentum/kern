@@ -12,7 +12,7 @@ func TestRequestID(t *testing.T) {
 	app := kern.New()
 	app.Use(RequestID())
 	app.GET("/test", func(c *kern.Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -28,7 +28,7 @@ func TestRequestID_UseExisting(t *testing.T) {
 	app := kern.New()
 	app.Use(RequestID())
 	app.GET("/test", func(c *kern.Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
@@ -75,7 +75,7 @@ func TestGzip(t *testing.T) {
 	app := kern.New()
 	app.Use(Gzip())
 	app.GET("/test", func(c *kern.Context) {
-		c.Text(200, "hello world")
+		_ = c.Text(200, "hello world")
 	})
 
 	t.Run("with gzip accept", func(t *testing.T) {

@@ -15,7 +15,7 @@ func TestLogger(t *testing.T) {
 	app := New()
 	app.Use(Logger(LoggerConfig{Output: &out}))
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -41,7 +41,7 @@ func TestLogger_JSON_WithFields(t *testing.T) {
 		},
 	}))
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -84,7 +84,7 @@ func TestLogger_Text_WithFields(t *testing.T) {
 		},
 	}))
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -112,7 +112,7 @@ func TestLogger_WithSlogLogger(t *testing.T) {
 		},
 	}))
 	app.GET("/test", func(c *Context) {
-		c.Text(200, "ok")
+		_ = c.Text(200, "ok")
 	})
 
 	req := newRequest(http.MethodGet, "/test")
@@ -224,7 +224,7 @@ func TestCORS(t *testing.T) {
 			app := New()
 			app.Use(CORSWithConfig(tt.config))
 			app.GET("/test", func(c *Context) {
-				c.Text(200, "ok")
+				_ = c.Text(200, "ok")
 			})
 
 			req := newRequest(http.MethodGet, "/test")
