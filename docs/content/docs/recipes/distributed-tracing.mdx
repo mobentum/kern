@@ -1,0 +1,185 @@
+---
+title: Recipe - Distributed Tracing with Structured Logging
+description: Propagate trace and span IDs across HTTP requests using custom middleware, xlog structured logging, and slog correlation.
+---
+
+# Distributed Tracing with Structured Logging
+
+Propagate trace context across services using request IDs, structured logging with xlog, and trace ID injection into all log entries.
+
+## Custom trace middleware
+
+```go
+import (
+    "crypto/rand"
+    "encoding/hex"
+    "log/slog"
+
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/middleware"
+    "github.com/mobentum/kern/extensions/xlog"
+)
+
+func generateID() string {
+    b := make([]byte, 16)
+    rand.Read(b)
+    return hex.EncodeToString(b)
+}
+```
+
+## Trace middleware
+
+```go
+func TraceMiddleware() kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            traceID := r.Header.Get("X-Trace-ID")
+            if traceID == "" {
+                traceID = generateID()
+            }
+            spanID := generateID()
+
+            // Inject into response headers for downstream clients
+            w.Header().Set("X-Trace-ID", traceID)
+            w.Header().Set("X-Span-ID", spanID)
+
+            // Attach to request context
+            ctx := context.WithValue(r.Context(), "trace_id", traceID)
+            ctx = context.WithValue(ctx, "span_id", spanID)
+            r = r.WithContext(ctx)
+
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+```
+
+## Structured logger with trace context
+
+```go
+func ContextAwareLogger() kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            traceID, _ := r.Context().Value("trace_id").(string)
+            spanID, _ := r.Context().Value("span_id").(string)
+
+            logger := slog.Default().With(
+                slog.String("trace_id", traceID),
+                slog.String("span_id", spanID),
+                slog.String("method", r.Method),
+                slog.String("path", r.URL.Path),
+            )
+
+            ctx := slog.NewContext(r.Context(), logger)
+            r = r.WithContext(ctx)
+
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+```
+
+## Client call with trace propagation
+
+```go
+type DownstreamClient struct {
+    BaseURL string
+    HTTP    http.Client
+}
+
+func (c *DownstreamClient) Get(ctx context.Context, path string) (*http.Response, error) {
+    req, _ := http.NewRequestWithContext(ctx, http.MethodGet, c.BaseURL+path, nil)
+
+    // Forward trace context from incoming request
+    if traceID, ok := ctx.Value("trace_id").(string); ok {
+        req.Header.Set("X-Trace-ID", traceID)
+    }
+    if spanID, ok := ctx.Value("span_id").(string); ok {
+        req.Header.Set("X-Span-ID", spanID)
+    }
+
+    return c.HTTP.Do(req)
+}
+```
+
+## Route handler with tracing
+
+```go
+func handler(c *kern.Context) {
+    logger := slog.Default()
+
+    logger.InfoContext(c.Context(), "handling request",
+        slog.Int("status", 200),
+    )
+
+    // Downstream call with trace propagation
+    client := DownstreamClient{BaseURL: "http://internal-api:8081"}
+    resp, err := client.Get(c.Context(), "/data")
+    if err != nil {
+        logger.ErrorContext(c.Context(), "downstream failed",
+            slog.String("error", err.Error()),
+        )
+        c.Error(http.StatusInternalServerError, "upstream unavailable")
+        return
+    }
+    defer resp.Body.Close()
+
+    c.OK(map[string]string{"status": "ok", "downstream": resp.Status})
+}
+```
+
+## App setup
+
+```go
+func main() {
+    logger := xlog.NewLogger(xlog.Config{
+        Format: "json",
+        Level:  slog.LevelInfo,
+    })
+    slog.SetDefault(logger)
+
+    app := kern.New(
+        kern.WithRecovery(),
+        kern.WithSlogLogger(logger),
+    )
+
+    // Trace middleware must run first
+    app.Use(TraceMiddleware())
+    app.Use(ContextAwareLogger())
+    app.Use(kern.Logger(kern.LoggerConfig{
+        SLogger: logger,
+        Fields: map[string]interface{}{
+            "service": "my-api",
+        },
+    }))
+
+    app.GET("/api/data", handler)
+
+    app.Run(":8080",
+        kern.WithGracefulShutdown(10*time.Second),
+    )
+}
+```
+
+## Structured log output
+
+```json
+{
+  "time": "2025-07-15T10:30:00Z",
+  "level": "INFO",
+  "msg": "handling request",
+  "trace_id": "a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6",
+  "span_id": "b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7",
+  "method": "GET",
+  "path": "/api/data",
+  "status": 200
+}
+```
+
+## Key patterns
+
+- **Propagation**: Trace ID flows from inbound request → handler → downstream calls
+- **Context injection**: Values attached to `context.Context`, accessible by all middleware
+- **Structured logs**: Every log entry includes `trace_id` and `span_id` for correlation
+- **Downstream forwarding**: `X-Trace-ID` and `X-Span-ID` headers sent to downstream services
+- **Middleware ordering**: Trace middleware runs first so all downstream middleware can access trace context

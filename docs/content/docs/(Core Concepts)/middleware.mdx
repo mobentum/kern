@@ -1,13 +1,13 @@
 ---
 title: Middleware
-description: Learn kern middleware for Go API servers, including global middleware, route-specific middleware, request flow ordering, and custom middleware patterns.
+description: Learn Kern middleware for Go API servers, including global middleware, route-specific middleware, request flow ordering, and custom middleware patterns.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 ## Middleware Concept
 
-Middleware in kern allows you to intercept requests before they reach your route handler. It follows the standard Go `func(http.Handler) http.Handler` pattern, making it seamlessly compatible with the vast ecosystem of existing Go middleware libraries.
+Middleware in Kern allows you to intercept requests before they reach your route handler. It follows the standard Go `func(http.Handler) http.Handler` pattern, making it seamlessly compatible with the vast ecosystem of existing Go middleware libraries.
 
 Middleware is executed in the order it is added ("onion" model).
 
@@ -40,7 +40,7 @@ admin := app.Group("/admin", adminAuthMiddleware, auditLogMiddleware)
 
 ## Built-in Middleware
 
-kern comes with essential middleware out of the box to get you started quickly.
+Kern comes with essential middleware out of the box to get you started quickly.
 
 ### Logger
 
@@ -185,7 +185,7 @@ func PoweredBy() kern.MiddlewareFunc {
 
 ## FAQ
 
-### In what order does kern execute middleware?
+### In what order does Kern execute middleware?
 
 Middleware runs in the order it is registered, with the first middleware acting as the outermost wrapper around later middleware and the final route handler.
 

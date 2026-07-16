@@ -1,23 +1,23 @@
 ---
-title: Why kern - Architecture Review Brief
-description: One-page decision brief for evaluating kern against Fiber, chi, and raw net/http in architecture and principal engineer reviews.
+title: Why Kern - Architecture Review Brief
+description: One-page decision brief for evaluating Kern against Fiber, chi, and raw net/http in architecture and principal engineer reviews.
 ---
 
-# Why kern - Architecture Review Brief
+# Why Kern - Architecture Review Brief
 
 Use this brief when you need to justify framework choice in platform reviews, principal engineer discussions, or migration planning.
 
 ## Executive Summary
 
-kern is a stdlib-native Go web framework designed for teams that want production controls and middleware depth without leaving `net/http` semantics.
+Kern is a stdlib-native Go web framework designed for teams that want production controls and middleware depth without leaving `net/http` semantics.
 
 Positioning:
-- Compared to Fiber: kern favors standard library compatibility and operational predictability over absolute peak throughput.
-- Compared to chi: kern includes stronger first-party production controls so teams write less custom glue.
+- Compared to Fiber: Kern favors standard library compatibility and operational predictability over absolute peak throughput.
+- Compared to chi: Kern includes stronger first-party production controls so teams write less custom glue.
 
 ## Decision Criteria
 
-Use these criteria when selecting between kern, Fiber, chi, or raw `net/http`:
+Use these criteria when selecting between Kern, Fiber, chi, or raw `net/http`:
 
 | Criterion | What to Ask | Why It Matters |
 |---|---|---|
@@ -60,7 +60,7 @@ Use these criteria when selecting between kern, Fiber, chi, or raw `net/http`:
 
 | Option | Strengths | Tradeoffs | Best Fit |
 |---|---|---|---|
-| kern | `net/http` compatibility + built-in production controls + measured policy overhead | Slightly less raw speed than fastest fasthttp paths in some scenarios | Teams prioritizing standard semantics, maintainability, and production safety |
+| Kern | `net/http` compatibility + built-in production controls + measured policy overhead | Slightly less raw speed than fastest fasthttp paths in some scenarios | Teams prioritizing standard semantics, maintainability, and production safety |
 | Fiber | High throughput and strong ecosystem | Different runtime model (`fasthttp`) and semantic differences from stdlib | Workloads where peak throughput dominates and runtime divergence is acceptable |
 | chi | Minimal, clean router with broad adoption | More custom glue for sessions/guards/strict controls | Teams wanting minimal surface and custom assembly |
 | raw `net/http` | Maximum control and zero framework abstraction | Highest implementation burden for production features | Narrow services with very custom behavior and strong platform capacity |
@@ -69,7 +69,7 @@ Use these criteria when selecting between kern, Fiber, chi, or raw `net/http`:
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| Team assumes kern is always fastest | Misaligned expectations in benchmark reviews | Frame choice as compatibility + safety + balanced performance, not absolute peak only |
+| Team assumes Kern is always fastest | Misaligned expectations in benchmark reviews | Frame choice as compatibility + safety + balanced performance, not absolute peak only |
 | Over-applying strict guards globally | Unnecessary latency/allocation tax | Apply strict controls route-by-route where needed |
 | Session key rotation done incorrectly | Auth/session regressions | Use staged rollout with `VerifyKeys` and `DecryptKeys` before key cutover |
 | Migration done in one large step | Hard-to-debug regressions | Migrate incrementally by route groups and re-benchmark hot paths |
@@ -96,18 +96,18 @@ Use these criteria when selecting between kern, Fiber, chi, or raw `net/http`:
 
 ## Review Q&A (Principal Engineer)
 
-### Is kern the fastest framework available?
+### Is Kern the fastest framework available?
 
-Not in every benchmark. Fiber may lead in some raw scenarios. kern optimizes for strong `net/http` compatibility plus production controls with transparent overhead.
+Not in every benchmark. Fiber may lead in some raw scenarios. Kern optimizes for strong `net/http` compatibility plus production controls with transparent overhead.
 
 ### Why not use chi + custom middleware?
 
-You can. kern is chosen when teams want faster delivery and consistency for first-party controls (guards, sessions, strict parsing, hardened middleware) without assembling and maintaining all policy glue.
+You can. Kern is chosen when teams want faster delivery and consistency for first-party controls (guards, sessions, strict parsing, hardened middleware) without assembling and maintaining all policy glue.
 
 ### What is the migration risk?
 
-Lower than most runtime-divergent options because kern keeps stdlib HTTP semantics and supports staged adoption by route group.
+Lower than most runtime-divergent options because Kern keeps stdlib HTTP semantics and supports staged adoption by route group.
 
 ## Suggested Decision Statement
 
-Choose kern when your organization values `net/http` correctness, predictable operations, and first-party production controls, and is willing to trade some peak benchmark wins for lower integration risk and better long-term maintainability.
+Choose Kern when your organization values `net/http` correctness, predictable operations, and first-party production controls, and is willing to trade some peak benchmark wins for lower integration risk and better long-term maintainability.

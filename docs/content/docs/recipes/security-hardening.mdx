@@ -1,6 +1,6 @@
 ---
 title: Recipe - Security Hardening
-description: Security-first middleware and route policy patterns for kern APIs, including auth, CSRF, header limits, and request guards.
+description: Security-first middleware and route policy patterns for Kern APIs, including auth, CSRF, header limits, and request guards.
 ---
 
 # Security Hardening
@@ -40,12 +40,12 @@ web.Use(middleware.CSRF())
 ## Route policy enforcement
 
 ```go
-app.RouteWithMiddleware("POST", "/upload", uploadHandler,
-    middleware.RequestGuard(middleware.RequestGuardConfig{
+app.AddConstraints("POST", "/upload", kern.Constraints{
+    Validate: middleware.RequestGuard(middleware.RequestGuardConfig{
         MaxBodyBytes:      8 << 20,
         RequireBody:       true,
         RequireHeaders:    []string{"X-Tenant"},
         AllowContentTypes: []string{"application/json", "multipart/form-data"},
     }),
-)
+}, uploadHandler)
 ```

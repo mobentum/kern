@@ -18,13 +18,13 @@ func ResponseLimit(configs ...ResponseLimitConfig) kern.MiddlewareFunc
 ```go
 import "github.com/mobentum/kern/middleware"
 
-app.RouteWithMiddleware("GET", "/export", exportHandler,
-    middleware.ResponseLimit(middleware.ResponseLimitConfig{
+app.AddConstraints("GET", "/export", kern.Constraints{
+    Validate: middleware.ResponseLimit(middleware.ResponseLimitConfig{
         MaxBytes:   1 << 20,
         StatusCode: 413,
         Message:    "response too large",
     }),
-)
+}, exportHandler)
 ```
 
 ## Notes

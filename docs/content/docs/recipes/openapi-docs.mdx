@@ -1,0 +1,146 @@
+---
+title: Recipe - OpenAPI Documentation with Swagger UI
+description: Document your Kern API routes with OpenAPI 3.0.3 using the extensions/openapi package, served as JSON and Swagger UI.
+---
+
+# OpenAPI Documentation with Swagger UI
+
+Use `extensions/openapi` to document routes explicitly and serve both a JSON schema and a Swagger UI page.
+
+## Setup
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/openapi"
+)
+
+type CreateUserRequest struct {
+    Name  string `json:"name"`
+    Email string `json:"email"`
+}
+
+type UserResponse struct {
+    ID   int    `json:"id"`
+    Name string `json:"name"`
+}
+```
+
+## Route handler
+
+```go
+func createUser(c *kern.Context) {
+    var req CreateUserRequest
+    if err := c.DecodeJSON(&req); err != nil {
+        c.Error(400, "invalid request")
+        return
+    }
+    user := UserResponse{ID: 1, Name: req.Name, Email: req.Email}
+    c.Created(user)
+}
+```
+
+## OpenAPI route metadata
+
+```go
+func main() {
+    app := kern.New(kern.WithRecovery())
+    app.POST("/api/users", createUser)
+```
+
+## Register OpenAPI documentation
+
+```go
+    if err := openapi.Register(app, openapi.Config{
+        JSONPath:  "/openapi.json",
+        DocsPath:  "/docs",
+        DocsTitle: "My API Docs",
+        Info: openapi.Info{
+            Title:       "User API",
+            Version:     "1.0.0",
+            Description: "A simple user management API",
+        },
+        Servers: []openapi.Server{
+            {URL: "http://localhost:8080", Description: "Local"},
+        },
+        Routes: []openapi.Route{
+            {
+                Method:      "POST",
+                Path:        "/api/users",
+                Summary:     "Create a user",
+                Description: "Creates a new user and returns the created resource.",
+                OperationID: "createUser",
+                Tags:        []string{"Users"},
+                RequestBody: &openapi.RequestBody{
+                    Description: "User creation payload",
+                    Required:    true,
+                    Content: map[string]openapi.MediaType{
+                        "application/json": {
+                            Schema: map[string]interface{}{
+                                "type": "object",
+                                "properties": map[string]interface{}{
+                                    "name":  map[string]interface{}{"type": "string"},
+                                    "email": map[string]interface{}{"type": "string", "format": "email"},
+                                },
+                                "required": []string{"name", "email"},
+                            },
+                        },
+                    },
+                },
+                Responses: map[string]openapi.Response{
+                    "201": {
+                        Description: "User created",
+                        Content: map[string]openapi.MediaType{
+                            "application/json": {
+                                Schema: map[string]interface{}{
+                                    "type": "object",
+                                    "properties": map[string]interface{}{
+                                        "id":   map[string]interface{}{"type": "integer"},
+                                        "name": map[string]interface{}{"type": "string"},
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    "400": {Description: "Invalid request"},
+                },
+            },
+        },
+    }); err != nil {
+        log.Fatal(err)
+    }
+```
+
+## Group-scoped documentation
+
+For larger APIs, group routes by tag and scope them:
+
+```go
+    var userRoutes, adminRoutes []openapi.Route
+    // ... populate route metadata
+
+    openapi.Register(app, openapi.Config{
+        JSONPath: "/openapi.json",
+        DocsPath: "/docs",
+        Info:     openapi.Info{Title: "Multi-scope API", Version: "2.0.0"},
+        Routes:   append(userRoutes, adminRoutes...),
+    })
+```
+
+```go
+    app.Run(":8080")
+}
+```
+
+## What you get
+
+- `/openapi.json` — OpenAPI 3.0.3 JSON schema
+- `/docs` — Swagger UI interactive documentation
+- Path parameters auto-detected from `{param}` syntax
+
+## Key patterns
+
+- **Explicit metadata**: Routes are documented manually (no reflection)
+- **Path auto-detection**: `{id}` in route paths auto-becomes a required path parameter
+- **Swagger UI**: Built-in at the configured `DocsPath`
+- **Group by tags**: Use `Tags` to organize endpoints in Swagger UI

@@ -1,17 +1,17 @@
 ---
 title: Context API
-description: Learn the kern Context API for Go request parsing, response writing, file uploads, downloads, headers, cookies, and efficient pooled request handling.
+description: Learn the Kern Context API for Go request parsing, response writing, file uploads, downloads, headers, cookies, and efficient pooled request handling.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 ## Overview
 
-The `Context` object is the core of request handling in kern. It wraps the standard `http.ResponseWriter` and `*http.Request` to provide helper methods for reading request data and writing responses.
+The `Context` object is the core of request handling in Kern. It wraps the standard `http.ResponseWriter` and `*http.Request` to provide helper methods for reading request data and writing responses.
 
 `Context` objects are **pooled** using `sync.Pool`. This means they are reused across requests to drastically reduce memory allocations and garbage collection overhead in high-throughput applications.
 
-If you are building a Go API server with kern, the `Context` API is where most request parsing and response generation happens.
+If you are building a Go API server with Kern, the `Context` API is where most request parsing and response generation happens.
 
 ## Request Data
 
@@ -135,7 +135,7 @@ ip := c.ClientIP()
 
 ### Request Body Binding
 
-kern provides helpers to decode JSON and XML request bodies directly into Go structs.
+Kern provides helpers to decode JSON and XML request bodies directly into Go structs.
 
 ```go
 type User struct {
@@ -163,7 +163,7 @@ Supported binding methods:
 
 ## Responses
 
-kern provides several semantic methods to send responses easily.
+Kern provides several semantic methods to send responses easily.
 
 ### JSON response
 
@@ -234,11 +234,11 @@ c.SetCookie(&http.Cookie{
 
 ## FAQ
 
-### Is kern `Context` compatible with `net/http`?
+### Is Kern `Context` compatible with `net/http`?
 
-Yes. kern wraps the standard `http.ResponseWriter` and `*http.Request` instead of replacing Go's HTTP model.
+Yes. Kern wraps the standard `http.ResponseWriter` and `*http.Request` instead of replacing Go's HTTP model.
 
-### Why does kern pool Context objects?
+### Why does Kern pool Context objects?
 
 Pooling reduces allocations and garbage collection pressure on hot request paths.
 

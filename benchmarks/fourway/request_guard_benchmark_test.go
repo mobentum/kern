@@ -38,14 +38,16 @@ func benchmarkKernRequestGuardUnguarded(b *testing.B) {
 
 func benchmarkKernRequestGuardGuarded(b *testing.B) {
 	app := kern.New()
-	app.RouteWithMiddleware(http.MethodPost, "/ingest", func(c *kern.Context) {
-		c.NoContent(http.StatusAccepted)
-	}, middleware.RequestGuard(middleware.RequestGuardConfig{
+	app.AddConstraints(http.MethodPost, "/ingest", kern.Constraints{
+		Validate: middleware.RequestGuard(middleware.RequestGuardConfig{
 		RequireBody:       true,
 		RequireHeaders:    []string{"X-Tenant"},
 		AllowContentTypes: []string{"application/json"},
 		MaxBodyBytes:      1 << 20,
-	}))
+		}),
+	}, func(c *kern.Context) {
+		c.NoContent(http.StatusAccepted)
+	})
 
 	body := []byte(`{"name":"kern","email":"dev@mobentum.dev"}`)
 	bodyReader := newRewindReadCloser(body)

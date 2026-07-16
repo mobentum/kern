@@ -29,3 +29,11 @@ html.dark body,
 ::selection {
 	background: rgba(168, 85, 247, 0.28);
 }
+
+.shiki {
+	background: #f8f6fc !important;
+}
+
+.dark .shiki {
+	background: var(--color-fd-card) !important;
+}

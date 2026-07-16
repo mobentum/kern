@@ -1,25 +1,31 @@
 ---
 title: Recipes
-description: Production-focused kern recipes for Go API servers, including health checks, graceful shutdown, SPA serving, JSON errors, observability, and middleware patterns.
+description: Production-focused Kern recipes for Go API servers, including health checks, graceful shutdown, SPA serving, JSON errors, observability, and middleware patterns.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 # Recipes
 
-This page collects practical patterns for building real Go services with kern.
+This page collects practical patterns for building real Go services with Kern.
 Use it when you need copy-pasteable solutions for API behavior, operations, observability, and project structure.
 
 ## Recipe Index
 
 - [Production API Blueprint](/docs/recipes/production-api-blueprint)
+- [CRUD REST API with Validation](/docs/recipes/crud-rest-api)
+- [File Upload & Download Service](/docs/recipes/file-upload-download)
+- [OpenAPI Documentation with Swagger UI](/docs/recipes/openapi-docs)
+- [Nested Route Groups with Middleware Inheritance](/docs/recipes/nested-route-groups)
+- [Distributed Tracing with Structured Logging](/docs/recipes/distributed-tracing)
+- [gRPC + HTTP Hybrid Service](/docs/recipes/grpc-http-hybrid)
 - [Observability Patterns](/docs/recipes/observability-patterns)
 - [Security Hardening](/docs/recipes/security-hardening)
 - [Performance and Limits](/docs/recipes/performance-and-limits)
 
 ## Custom 404 Handler
 
-Since kern uses `http.ServeMux` internally, 404s are handled by default. However, you can create a custom catch-all route if you need specific 404 logic (like returning a JSON error instead of text).
+Since Kern uses `http.ServeMux` internally, 404s are handled by default. However, you can create a custom catch-all route if you need specific 404 logic (like returning a JSON error instead of text).
 
 To handle 404s within a group (e.g., API), use a wildcard at the end of your group definitions.
 
@@ -33,7 +39,7 @@ app.GET("/{path...}", func(c *kern.Context) {
 
 ## Graceful Shutdown
 
-kern supports graceful shutdown configuration, allowing ongoing requests to complete before the server stops.
+Kern supports graceful shutdown configuration, allowing ongoing requests to complete before the server stops.
 
 ```go
 // 10 seconds timeout for graceful shutdown
@@ -258,14 +264,17 @@ func ObserveGuardDenies(route string) kern.MiddlewareFunc {
     }
 }
 
-app.RouteWithMiddleware("POST", "/upload", uploadHandler,
-    ObserveGuardDenies("upload"),
-    middleware.RequestGuard(middleware.RequestGuardConfig{
-        RequireBody:       true,
-        RequireHeaders:    []string{"X-Tenant"},
-        AllowContentTypes: []string{"application/json"},
-    }),
-)
+app.AddConstraints("POST", "/upload", kern.Constraints{
+    Validate: func(next http.Handler) http.Handler {
+        return ObserveGuardDenies("upload")(
+            middleware.RequestGuard(middleware.RequestGuardConfig{
+                RequireBody:       true,
+                RequireHeaders:    []string{"X-Tenant"},
+                AllowContentTypes: []string{"application/json"},
+            })(next),
+        )
+    },
+}, uploadHandler)
 ```
 
 ### Track session cookie rejection/decryption fallback
@@ -358,7 +367,7 @@ func getEnv(key, defaultValue string) string {
 
 ## Related Pages
 
-- [Getting Started](/docs/getting-started) for the first kern service
+- [Getting Started](/docs/getting-started) for the first Kern service
 - [Middleware](/docs/middleware) for middleware execution patterns
 - [Middleware Catalog](/docs/middleware-catalog) for first-party middleware inventory
 - [Architecture Flow](/docs/architecture-flow) for request/response lifecycle context

@@ -18,14 +18,14 @@ func RequestGuard(configs ...RequestGuardConfig) kern.MiddlewareFunc
 ```go
 import "github.com/mobentum/kern/middleware"
 
-app.RouteWithMiddleware("POST", "/upload", uploadHandler,
-    middleware.RequestGuard(middleware.RequestGuardConfig{
+app.AddConstraints("POST", "/upload", kern.Constraints{
+    Validate: middleware.RequestGuard(middleware.RequestGuardConfig{
         MaxBodyBytes:      8 << 20,
         RequireBody:       true,
         RequireHeaders:    []string{"X-Tenant"},
         AllowContentTypes: []string{"application/json", "multipart/form-data"},
     }),
-)
+}, uploadHandler)
 ```
 
 ## Best practices

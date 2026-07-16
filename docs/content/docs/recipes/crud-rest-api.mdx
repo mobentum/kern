@@ -1,0 +1,206 @@
+---
+title: Recipe - CRUD REST API with Validation
+description: Full CRUD REST API with Kern's binding, validation tags, path constraints, and route-level input validation middleware.
+---
+
+# CRUD REST API with Validation
+
+Build a type-safe CRUD API using Kern's binding, built-in validation, and path constraints.
+
+## Struct with validation tags
+
+```go
+type CreateUserRequest struct {
+    Name  string `json:"name" validate:"required,min=2,max=100"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age" validate:"required,min=1,max=150"`
+    Role  string `json:"role" validate:"required,oneof=admin viewer editor"`
+}
+
+type UserResponse struct {
+    ID        int       `json:"id"`
+    Name      string    `json:"name"`
+    Email     string    `json:"email"`
+    Age       int       `json:"age"`
+    Role      string    `json:"role"`
+    CreatedAt time.Time `json:"created_at"`
+}
+```
+
+## In-memory store with thread safety
+
+```go
+type UserStore struct {
+    mu     sync.RWMutex
+    users  map[int]*UserResponse
+    nextID int
+}
+
+func NewUserStore() *UserStore {
+    return &UserStore{
+        users:  make(map[int]*UserResponse),
+        nextID: 1,
+    }
+}
+
+func (s *UserStore) Create(req CreateUserRequest) UserResponse {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    u := UserResponse{
+        ID:        s.nextID,
+        Name:      req.Name,
+        Email:     req.Email,
+        Age:       req.Age,
+        Role:      req.Role,
+        CreatedAt: time.Now(),
+    }
+    s.nextID++
+    s.users[u.ID] = &u
+    return u
+}
+
+func (s *UserStore) Get(id int) (UserResponse, bool) {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    u, ok := s.users[id]
+    if !ok {
+        return UserResponse{}, false
+    }
+    return *u, true
+}
+
+func (s *UserStore) List() []UserResponse {
+    s.mu.RLock()
+    defer s.mu.RUnlock()
+    result := make([]UserResponse, 0, len(s.users))
+    for _, u := range s.users {
+        result = append(result, *u)
+    }
+    return result
+}
+
+func (s *UserStore) Update(id int, req CreateUserRequest) (UserResponse, bool) {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    u, ok := s.users[id]
+    if !ok {
+        return UserResponse{}, false
+    }
+    u.Name = req.Name
+    u.Email = req.Email
+    u.Age = req.Age
+    u.Role = req.Role
+    return *u, true
+}
+
+func (s *UserStore) Delete(id int) bool {
+    s.mu.Lock()
+    defer s.mu.Unlock()
+    _, ok := s.users[id]
+    if !ok {
+        return false
+    }
+    delete(s.users, id)
+    return true
+}
+```
+
+## Validation middleware
+
+A generic middleware that decodes and validates the request body, then passes the parsed value through the request context:
+
+```go
+type validatedBodyKey struct{}
+
+func ValidateBody[T any]() kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            var req T
+            c := kern.NewContext(w, r)
+            if err := c.DecodeJSON(&req); err != nil {
+                c.Error(http.StatusBadRequest, "invalid request body")
+                return
+            }
+            if err := c.Validate(&req); err != nil {
+                c.JSONError(http.StatusUnprocessableEntity, "validation failed", err)
+                return
+            }
+            ctx := context.WithValue(r.Context(), validatedBodyKey{}, &req)
+            next.ServeHTTP(w, r.WithContext(ctx))
+        })
+    }
+}
+```
+
+## Route registration with middleware and path constraints
+
+```go
+func main() {
+    store := NewUserStore()
+
+    app := kern.New(
+        kern.WithRecovery(),
+        kern.WithSlogLogger(slog.New(slog.NewTextHandler(os.Stdout, nil))),
+    )
+
+    api := app.Group("/api/v1")
+
+    api.AddConstraints("POST", "/users", kern.Constraints{
+        Validate: ValidateBody[CreateUserRequest](),
+    }, func(c *kern.Context) {
+        req := c.Request.Context().Value(validatedBodyKey{}).(*CreateUserRequest)
+        user := store.Create(*req)
+        c.Created(user)
+    })
+
+    api.AddConstraints("GET", "/users/{id}", kern.Constraints{
+        Path: kern.PathConstraints{"id": kern.UintPathConstraint},
+    }, func(c *kern.Context) {
+        id, _ := strconv.Atoi(c.Param("id"))
+        user, ok := store.Get(id)
+        if !ok {
+            c.Error(http.StatusNotFound, "user not found")
+            return
+        }
+        c.OK(user)
+    })
+
+    api.GET("/users", func(c *kern.Context) {
+        c.OK(store.List())
+    })
+
+    api.AddConstraints("PUT", "/users/{id}", kern.Constraints{
+        Path:     kern.PathConstraints{"id": kern.UintPathConstraint},
+        Validate: ValidateBody[CreateUserRequest](),
+    }, func(c *kern.Context) {
+        id, _ := strconv.Atoi(c.Param("id"))
+        req := c.Request.Context().Value(validatedBodyKey{}).(*CreateUserRequest)
+        user, ok := store.Update(id, *req)
+        if !ok {
+            c.Error(http.StatusNotFound, "user not found")
+            return
+        }
+        c.OK(user)
+    })
+
+    api.AddConstraints("DELETE", "/users/{id}", kern.Constraints{
+        Path: kern.PathConstraints{"id": kern.UintPathConstraint},
+    }, func(c *kern.Context) {
+        id, _ := strconv.Atoi(c.Param("id"))
+        if !store.Delete(id) {
+            c.Error(http.StatusNotFound, "user not found")
+            return
+        }
+        c.NoContent(http.StatusNoContent)
+    })
+
+    app.Run(":8080")
+}
+```
+
+## Key patterns
+
+- **Validation tags**: `required`, `min`, `max`, `oneof`, `email` on struct fields
+- **Path constraints**: `kern.UintPathConstraint` ensures type-safe path params
+- **Error responses**: Structured `c.Error` and `c.JSONError` for consistent API errors
+- **Thread-safe store**: `sync.RWMutex` for concurrent access

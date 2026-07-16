@@ -1,13 +1,13 @@
 ---
 title: Routing
-description: Learn kern routing for Go web services, including HTTP methods, path parameters, wildcards, route groups, static files, and stdlib-native route matching.
+description: Learn Kern routing for Go web services, including HTTP methods, path parameters, wildcards, route groups, static files, and stdlib-native route matching.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 ## HTTP Methods
 
-kern provides helper methods for all standard HTTP verbs. This makes route definition declarative and easy to read. Since kern builds on top of `net/http`, these are fully compatible with standard handlers.
+Kern provides helper methods for all standard HTTP verbs. This makes route definition declarative and easy to read. Since Kern builds on top of `net/http`, these are fully compatible with standard handlers.
 
 ```go
 app := kern.Default()
@@ -26,9 +26,9 @@ app.OPTIONS("/api", showOptions)
 
 ## Path Parameters
 
-kern utilizes the robust pattern matching from Go 1.22's `net/http`. Parameters are defined using `{name}` syntax in the path.
+Kern utilizes the robust pattern matching from Go 1.22's `net/http`. Parameters are defined using `{name}` syntax in the path.
 
-If you want lightweight Go routing without a custom router abstraction, kern keeps route definitions close to the standard library while adding clearer ergonomics.
+If you want lightweight Go routing without a custom router abstraction, Kern keeps route definitions close to the standard library while adding clearer ergonomics.
 
 ### Capturing Values
 
@@ -124,9 +124,9 @@ app.Static("/static/", "./public")
 
 ## FAQ
 
-### Does kern use Go's built-in router?
+### Does Kern use Go's built-in router?
 
-Yes. kern builds on Go 1.22+ `net/http` routing semantics instead of shipping a separate routing engine.
+Yes. Kern builds on Go 1.22+ `net/http` routing semantics instead of shipping a separate routing engine.
 
 ### Can I organize large APIs with groups?
 

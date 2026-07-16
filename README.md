@@ -47,7 +47,7 @@ Kern is inspired by:
 - **Go 1.22+ native routing** via `http.ServeMux`
 - **Named routes & path constraints** — typed URL params (`kern.UintPathConstraint`) and route lookup by name
 - **Built-in auth** — `BearerAuth` and `BasicAuth` middleware ship in core
-- **Route-specific middleware** — apply guards per route with `RouteWithMiddleware()`, no group nesting needed
+- **Route-specific middleware** — apply guards per route with `AddConstraints()`, no group nesting needed
 - **Structured request binding** — `Bind()` / `BindQuery()` / `BindForm()` / `BindHeader()` with struct tags
 - **File handling** — multipart upload (`SaveFile`), download (`DownloadFile`), streaming with range support (`StreamFile`)
 - **Conditional requests** — built-in `ETag`, `LastModified`, `If-None-Match` / `If-Modified-Since` evaluation
@@ -133,12 +133,12 @@ app.Static("/static/", "./public")
 app.Run(":8080")
 app.RunTLS(":8443", "cert.pem", "key.pem")
 
-app.RouteWithConstraints("GET", "/users/{id}", kern.PathConstraints{
-    "id": kern.UintPathConstraint,
+app.AddConstraints("GET", "/users/{id}", kern.Constraints{
+    Path: kern.PathConstraints{"id": kern.UintPathConstraint},
 }, handler)
 
-app.RouteNamedWithConstraints("users_show", "GET", "/users/{id}", kern.PathConstraints{
-    "id": kern.UintPathConstraint,
+app.AddNamedConstraints("users_show", "GET", "/users/{id}", kern.Constraints{
+    Path: kern.PathConstraints{"id": kern.UintPathConstraint},
 }, handler)
 ```
 
@@ -207,14 +207,14 @@ app.GET("/login", func(c *kern.Context) {
 Route-level request guard example:
 
 ```go
-app.RouteWithMiddleware(http.MethodPost, "/upload", uploadHandler,
-    kmw.RequestGuard(kmw.RequestGuardConfig{
+app.AddConstraints(http.MethodPost, "/upload", kern.Constraints{
+    Validate: kmw.RequestGuard(kmw.RequestGuardConfig{
         MaxBodyBytes:      8 << 20,
         RequireBody:       true,
         RequireHeaders:    []string{"X-Tenant"},
         AllowContentTypes: []string{"application/json", "multipart/form-data"},
     }),
-)
+}, uploadHandler)
 ```
 
 ## Optional Packages

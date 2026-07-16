@@ -111,8 +111,8 @@ func TestGroup_NamedRoute_Introspection(t *testing.T) {
 func TestGroup_RouteWithConstraints(t *testing.T) {
 	app := New()
 	group := app.Group("/api")
-	group.RouteWithConstraints(http.MethodGet, "/users/{id}", PathConstraints{
-		"id": UintPathConstraint,
+	group.AddConstraints(http.MethodGet, "/users/{id}", Constraints{
+		Path: PathConstraints{"id": UintPathConstraint},
 	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "%s", c.Param("id"))
 	})
@@ -131,16 +131,18 @@ func TestGroup_RouteWithConstraints(t *testing.T) {
 func TestGroup_RouteWithMiddleware(t *testing.T) {
 	app := New()
 	group := app.Group("/api")
-	group.RouteWithMiddleware(http.MethodGet, "/guarded", func(c *Context) {
+	group.AddConstraints(http.MethodGet, "/guarded", Constraints{
+		Validate: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("X-Guard") == "" {
+					http.Error(w, "missing guard", http.StatusBadRequest)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		},
+	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "%s", "ok")
-	}, func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("X-Guard") == "" {
-				http.Error(w, "missing guard", http.StatusBadRequest)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
 	})
 
 	res := serve(app, newRequest(http.MethodGet, "/api/guarded"))
@@ -329,8 +331,8 @@ func TestGroup_VerbMethods(t *testing.T) {
 	t.Run("RouteNamedWithConstraints", func(t *testing.T) {
 		app := New()
 		grp := app.Group("/api")
-		grp.RouteNamedWithConstraints("constrained", http.MethodGet, "/items/{id}", PathConstraints{
-			"id": IntPathConstraint,
+		grp.AddNamedConstraints("constrained", http.MethodGet, "/items/{id}", Constraints{
+			Path: PathConstraints{"id": IntPathConstraint},
 		}, func(c *Context) {
 			_ = c.Text(http.StatusOK, "%s", c.Param("id"))
 		})
@@ -354,16 +356,18 @@ func TestGroup_VerbMethods(t *testing.T) {
 	t.Run("RouteNamedWithMiddleware", func(t *testing.T) {
 		app := New()
 		grp := app.Group("/api")
-		grp.RouteNamedWithMiddleware("guarded", http.MethodGet, "/secure", func(c *Context) {
+		grp.AddNamedConstraints("guarded", http.MethodGet, "/secure", Constraints{
+			Validate: func(next http.Handler) http.Handler {
+				return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.Header.Get("X-Auth") == "" {
+						http.Error(w, "unauthorized", http.StatusUnauthorized)
+						return
+					}
+					next.ServeHTTP(w, r)
+				})
+			},
+		}, func(c *Context) {
 			_ = c.Text(http.StatusOK, "secure")
-		}, func(next http.Handler) http.Handler {
-			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				if r.Header.Get("X-Auth") == "" {
-					http.Error(w, "unauthorized", http.StatusUnauthorized)
-					return
-				}
-				next.ServeHTTP(w, r)
-			})
 		})
 
 		_, ok := app.RouteByName("guarded")

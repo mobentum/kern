@@ -1,13 +1,13 @@
 ---
 title: Migration Guide
-description: Upgrade existing Go services to newer kern routing, middleware, sessions, request guards, and performance-oriented helper APIs with minimal disruption.
+description: Upgrade existing Go services to newer Kern routing, middleware, sessions, request guards, and performance-oriented helper APIs with minimal disruption.
 ---
 
 # Migration Guide
 
 This guide summarizes notable additions and how to adopt them safely.
 
-If you are moving from plain `net/http`, older kern code, or ad hoc middleware stacks, this page helps you adopt newer kern capabilities incrementally.
+If you are moving from plain `net/http`, older Kern code, or ad hoc middleware stacks, this page helps you adopt newer Kern capabilities incrementally.
 
 ## 1) Route naming and introspection
 
@@ -27,8 +27,8 @@ No breaking changes: existing `GET/POST/...` APIs remain valid.
 When upgrading routes that expect numeric/slug identifiers, prefer constrained routes:
 
 ```go
-app.RouteWithConstraints("GET", "/users/{id}", kern.PathConstraints{
-    "id": kern.UintPathConstraint,
+app.AddConstraints("GET", "/users/{id}", kern.Constraints{
+    Path: kern.PathConstraints{"id": kern.UintPathConstraint},
 }, handler)
 ```
 
@@ -103,14 +103,14 @@ app := kern.New(kern.WithStrictRequestParsing(true))
 Apply route-level guard middleware where you need stricter policies:
 
 ```go
-app.RouteWithMiddleware("POST", "/upload", uploadHandler,
-    middleware.RequestGuard(middleware.RequestGuardConfig{
+app.AddConstraints("POST", "/upload", kern.Constraints{
+    Validate: middleware.RequestGuard(middleware.RequestGuardConfig{
         MaxBodyBytes:      8 << 20,
         RequireBody:       true,
         RequireHeaders:    []string{"X-Tenant"},
         AllowContentTypes: []string{"application/json", "multipart/form-data"},
     }),
-)
+}, uploadHandler)
 ```
 
 ## Migration checklist
@@ -126,7 +126,7 @@ app.RouteWithMiddleware("POST", "/upload", uploadHandler,
 
 ### Can I migrate gradually?
 
-Yes. kern keeps the existing HTTP model intact, so you can introduce middleware, route metadata, constraints, and request guards one endpoint group at a time.
+Yes. Kern keeps the existing HTTP model intact, so you can introduce middleware, route metadata, constraints, and request guards one endpoint group at a time.
 
 ### What should I validate after migrating?
 

@@ -99,11 +99,11 @@ func Timeout(d time.Duration) kern.MiddlewareFunc {
 }
 
 // Apply per-route for specific endpoints
-app.RouteWithMiddleware("GET", "/slow-report",
-    reportHandler,
-    Timeout(5 * time.Second),
-    RequestID(),
-)`,
+app.AddConstraints("GET", "/slow-report", kern.Constraints{
+    Validate: func(next http.Handler) http.Handler {
+        return Timeout(5 * time.Second)(RequestID()(next))
+    },
+}, reportHandler)`,
     },
     {
         label: "File Streaming",

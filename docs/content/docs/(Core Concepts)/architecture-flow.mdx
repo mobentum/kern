@@ -1,16 +1,16 @@
 ---
 title: Architecture Flow
-description: Understand the end-to-end request and response flow in kern, including net/http entry, middleware order, route matching, context reuse, handler execution, and response writes.
+description: Understand the end-to-end request and response flow in Kern, including net/http entry, middleware order, route matching, context reuse, handler execution, and response writes.
 ---
 
 import { Callout } from "fumadocs-ui/components/callout";
 
 # Architecture Flow
 
-This page describes how a request moves through kern and how responses are produced.
+This page describes how a request moves through Kern and how responses are produced.
 It is useful for debugging middleware order, response shaping, and performance behavior.
 
-If you are evaluating kern for API servers or production Go services, this flow explains where routing, middleware, request parsing, and response handling actually happen.
+If you are evaluating Kern for API servers or production Go services, this flow explains where routing, middleware, request parsing, and response handling actually happen.
 
 ## High-level request/response path
 
@@ -40,18 +40,18 @@ flowchart TD
 ## 1) Listener and transport
 
 - The Go `net/http` server accepts the request.
-- The request is forwarded to kern's app handler.
+- The request is forwarded to Kern's app handler.
 
 ## 2) Middleware wrapping
 
 - Global middleware (`app.Use`) runs first.
 - Group middleware runs next for matching groups.
-- Route-level middleware (`RouteWithMiddleware`) runs closest to handler logic.
+- Route-level middleware (`AddConstraints`) runs closest to handler logic.
 
 ## 3) Route matching and context lifecycle
 
 - Routing is handled using Go 1.22+ stdlib routing patterns.
-- kern acquires a reusable context from pool-backed storage for low allocation overhead.
+- Kern acquires a reusable context from pool-backed storage for low allocation overhead.
 
 ## 4) Handler execution
 
@@ -84,10 +84,10 @@ flowchart TD
 
 ## FAQ
 
-### Does kern use a custom router?
+### Does Kern use a custom router?
 
-No. kern relies on Go 1.22+ `net/http` routing behavior and builds framework ergonomics around it.
+No. Kern relies on Go 1.22+ `net/http` routing behavior and builds framework ergonomics around it.
 
 ### Where should I put request validation?
 
-Put broad policies in middleware and route-specific validation close to the route using `RouteWithMiddleware`, `RequestGuard`, and handler-level checks.
+Put broad policies in middleware and route-specific validation close to the route using `AddConstraints`, `RequestGuard`, and handler-level checks.

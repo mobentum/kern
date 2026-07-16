@@ -1,0 +1,20 @@
+{
+  "pages": [
+    "logger",
+    "recovery",
+    "cors",
+    "bearer-auth",
+    "basic-auth",
+    "request-id",
+    "gzip",
+    "timeout",
+    "rate-limiter",
+    "jwt",
+    "csrf",
+    "security-headers",
+    "header-limits",
+    "request-guard",
+    "response-limit",
+    "session"
+  ]
+}

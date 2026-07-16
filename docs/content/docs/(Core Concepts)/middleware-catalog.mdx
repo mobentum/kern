@@ -1,11 +1,11 @@
 ---
 title: Middleware Catalog
-description: Complete middleware catalog for kern, covering built-in Go HTTP middleware, optional first-party middleware, request guards, sessions, rate limiting, and response controls.
+description: Complete middleware catalog for Kern, covering built-in Go HTTP middleware, optional first-party middleware, request guards, sessions, rate limiting, and response controls.
 ---
 
 # Middleware Catalog
 
-This page lists middleware currently shipped with kern.
+This page lists middleware currently shipped with Kern.
 
 Use this page when you need a quick reference for what middleware exists, which package it belongs to, and how to layer it into a Go API server.
 
@@ -189,7 +189,7 @@ if ok {
 
 - Put generic concerns in app-global middleware (`Logger`, `Recovery`, CORS, `RequestID`).
 - Apply auth/authorization middleware per group (`/api`, `/admin`).
-- Apply route-specific guards with `RouteWithMiddleware` / `RouteNamedWithMiddleware`.
+- Apply route-specific guards with `AddConstraints` / `AddNamedConstraints`.
 - Use `Session`, `CSRF`, `JWT`, and `RateLimiter` as close as possible to protected surfaces.
 
 ## Detailed middleware guides

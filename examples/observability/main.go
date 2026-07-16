@@ -51,17 +51,19 @@ func main() {
 		_ = c.JSON(http.StatusOK, map[string]string{"status": "logged_in"})
 	})
 
-	app.RouteWithMiddleware(http.MethodPost, "/api/upload", func(c *kern.Context) {
+	guard := middleware.RequestGuard(middleware.RequestGuardConfig{
+		RequireBody:       true,
+		RequireHeaders:    []string{"X-Tenant"},
+		AllowContentTypes: []string{"application/json"},
+		MaxBodyBytes:      1 << 20,
+	})
+	app.AddConstraints(http.MethodPost, "/api/upload", kern.Constraints{
+		Validate: func(next http.Handler) http.Handler {
+			return ObserveGuardDenies("upload")(guard(next))
+		},
+	}, func(c *kern.Context) {
 		_ = c.JSON(http.StatusAccepted, map[string]string{"status": "accepted"})
-	},
-		ObserveGuardDenies("upload"),
-		middleware.RequestGuard(middleware.RequestGuardConfig{
-			RequireBody:       true,
-			RequireHeaders:    []string{"X-Tenant"},
-			AllowContentTypes: []string{"application/json"},
-			MaxBodyBytes:      1 << 20,
-		}),
-	)
+	})
 
 	app.GET("/api/me", func(c *kern.Context) {
 		rawCookie, _ := c.Cookie("_session")

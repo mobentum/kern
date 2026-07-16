@@ -1,0 +1,15 @@
+{
+  "title": "Recipes",
+  "pages": [
+    "production-api-blueprint",
+    "crud-rest-api",
+    "file-upload-download",
+    "openapi-docs",
+    "nested-route-groups",
+    "distributed-tracing",
+    "grpc-http-hybrid",
+    "observability-patterns",
+    "security-hardening",
+    "performance-and-limits"
+  ]
+}

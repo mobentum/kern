@@ -74,6 +74,13 @@ type PathConstraints map[string]PathConstraint
 // MiddlewareFunc is the middleware signature
 type MiddlewareFunc func(http.Handler) http.Handler
 
+// Constraints bundles all route-level restrictions: path parameter constraints
+// and optional body validation middleware. A zero value means no constraints.
+type Constraints struct {
+	Path     PathConstraints
+	Validate MiddlewareFunc
+}
+
 // Option configures the app
 type Option func(*App)
 
@@ -316,10 +323,6 @@ func (app *App) handleNamed(method, path, name string, handler HandlerFunc) {
 	app.handleNamedWithConstraintsAndMiddleware(method, path, name, nil, handler, nil)
 }
 
-func (app *App) handleNamedWithConstraints(method, path, name string, constraints PathConstraints, handler HandlerFunc) {
-	app.handleNamedWithConstraintsAndMiddleware(method, path, name, constraints, handler, nil)
-}
-
 func (app *App) handleNamedWithConstraintsAndMiddleware(
 	method,
 	path,
@@ -372,24 +375,23 @@ func (app *App) RouteNamed(name, method, path string, handler HandlerFunc) {
 	app.handleNamed(method, path, name, handler)
 }
 
-// RouteWithConstraints registers a handler with typed path constraints.
-func (app *App) RouteWithConstraints(method, path string, constraints PathConstraints, handler HandlerFunc) {
-	app.handleNamedWithConstraints(method, path, "", constraints, handler)
+// AddConstraints registers a handler with route-level constraints: typed path
+// parameters and/or body validation middleware.
+func (app *App) AddConstraints(method, path string, constraints Constraints, handler HandlerFunc) {
+	var middlewares []MiddlewareFunc
+	if constraints.Validate != nil {
+		middlewares = []MiddlewareFunc{constraints.Validate}
+	}
+	app.handleNamedWithConstraintsAndMiddleware(method, path, "", constraints.Path, handler, middlewares)
 }
 
-// RouteNamedWithConstraints registers a named handler with typed path constraints.
-func (app *App) RouteNamedWithConstraints(name, method, path string, constraints PathConstraints, handler HandlerFunc) {
-	app.handleNamedWithConstraints(method, path, name, constraints, handler)
-}
-
-// RouteWithMiddleware registers a handler with route-specific middleware.
-func (app *App) RouteWithMiddleware(method, path string, handler HandlerFunc, middlewares ...MiddlewareFunc) {
-	app.handleNamedWithConstraintsAndMiddleware(method, path, "", nil, handler, middlewares)
-}
-
-// RouteNamedWithMiddleware registers a named handler with route-specific middleware.
-func (app *App) RouteNamedWithMiddleware(name, method, path string, handler HandlerFunc, middlewares ...MiddlewareFunc) {
-	app.handleNamedWithConstraintsAndMiddleware(method, path, name, nil, handler, middlewares)
+// AddNamedConstraints registers a named handler with route-level constraints.
+func (app *App) AddNamedConstraints(name, method, path string, constraints Constraints, handler HandlerFunc) {
+	var middlewares []MiddlewareFunc
+	if constraints.Validate != nil {
+		middlewares = []MiddlewareFunc{constraints.Validate}
+	}
+	app.handleNamedWithConstraintsAndMiddleware(method, path, name, constraints.Path, handler, middlewares)
 }
 
 // GET registers a GET route

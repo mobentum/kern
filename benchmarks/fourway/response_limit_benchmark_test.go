@@ -33,11 +33,11 @@ func benchmarkKernResponseLimitUnguarded(b *testing.B) {
 
 func benchmarkKernResponseLimitLimited(b *testing.B) {
 	app := kern.New()
-	app.RouteWithMiddleware(http.MethodGet, "/stream", func(c *kern.Context) {
+	app.AddConstraints(http.MethodGet, "/stream", kern.Constraints{
+		Validate: middleware.ResponseLimit(middleware.ResponseLimitConfig{MaxBytes: 64}),
+	}, func(c *kern.Context) {
 		_, _ = c.Response.Write([]byte("ok"))
-	}, middleware.ResponseLimit(middleware.ResponseLimitConfig{
-		MaxBytes: 64,
-	}))
+	})
 
 	req := httptest.NewRequest(http.MethodGet, "/stream", nil)
 	res := newDiscardResponseWriter()

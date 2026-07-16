@@ -235,8 +235,8 @@ func TestApp_RouteNamed_DuplicatePanics(t *testing.T) {
 
 func TestApp_RouteWithConstraints(t *testing.T) {
 	app := New()
-	app.RouteWithConstraints(http.MethodGet, "/users/{id}", PathConstraints{
-		"id": UintPathConstraint,
+	app.AddConstraints(http.MethodGet, "/users/{id}", Constraints{
+		Path: PathConstraints{"id": UintPathConstraint},
 	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "%s", c.Param("id"))
 	})
@@ -254,8 +254,8 @@ func TestApp_RouteWithConstraints(t *testing.T) {
 
 func TestApp_RouteNamedWithConstraints_Introspection(t *testing.T) {
 	app := New()
-	app.RouteNamedWithConstraints("users_numeric", http.MethodGet, "/users/{id}", PathConstraints{
-		"id": UintPathConstraint,
+	app.AddNamedConstraints("users_numeric", http.MethodGet, "/users/{id}", Constraints{
+		Path: PathConstraints{"id": UintPathConstraint},
 	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "ok")
 	})
@@ -271,16 +271,18 @@ func TestApp_RouteNamedWithConstraints_Introspection(t *testing.T) {
 
 func TestApp_RouteWithMiddleware(t *testing.T) {
 	app := New()
-	app.RouteWithMiddleware(http.MethodGet, "/guarded", func(c *Context) {
+	app.AddConstraints(http.MethodGet, "/guarded", Constraints{
+		Validate: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Header.Get("X-Guard") == "" {
+					http.Error(w, "missing guard", http.StatusBadRequest)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		},
+	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "%s", "ok")
-	}, func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.Header.Get("X-Guard") == "" {
-				http.Error(w, "missing guard", http.StatusBadRequest)
-				return
-			}
-			next.ServeHTTP(w, r)
-		})
 	})
 
 	res := serve(app, newRequest(http.MethodGet, "/guarded"))
@@ -298,10 +300,10 @@ func TestApp_RouteWithMiddleware(t *testing.T) {
 
 func TestApp_RouteNamedWithMiddleware_Introspection(t *testing.T) {
 	app := New()
-	app.RouteNamedWithMiddleware("guarded_show", http.MethodGet, "/guarded", func(c *Context) {
+	app.AddNamedConstraints("guarded_show", http.MethodGet, "/guarded", Constraints{
+		Validate: func(next http.Handler) http.Handler { return next },
+	}, func(c *Context) {
 		_ = c.Text(http.StatusOK, "%s", "ok")
-	}, func(next http.Handler) http.Handler {
-		return next
 	})
 
 	info, ok := app.RouteByName("guarded_show")

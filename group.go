@@ -33,10 +33,6 @@ func (g *Group) handleNamed(method, path, name string, handler HandlerFunc) {
 	g.handleNamedWithConstraintsAndMiddleware(method, path, name, nil, handler, nil)
 }
 
-func (g *Group) handleNamedWithConstraints(method, path, name string, constraints PathConstraints, handler HandlerFunc) {
-	g.handleNamedWithConstraintsAndMiddleware(method, path, name, constraints, handler, nil)
-}
-
 func (g *Group) handleNamedWithConstraintsAndMiddleware(
 	method,
 	path,
@@ -160,22 +156,20 @@ func (g *Group) OPTIONSNamed(name, path string, handler HandlerFunc) {
 	g.handleNamed(http.MethodOptions, path, name, handler)
 }
 
-// RouteWithConstraints registers a constrained route for the group.
-func (g *Group) RouteWithConstraints(method, path string, constraints PathConstraints, handler HandlerFunc) {
-	g.handleNamedWithConstraints(method, path, "", constraints, handler)
+// AddConstraints registers a route with route-level constraints.
+func (g *Group) AddConstraints(method, path string, constraints Constraints, handler HandlerFunc) {
+	var middlewares []MiddlewareFunc
+	if constraints.Validate != nil {
+		middlewares = []MiddlewareFunc{constraints.Validate}
+	}
+	g.handleNamedWithConstraintsAndMiddleware(method, path, "", constraints.Path, handler, middlewares)
 }
 
-// RouteNamedWithConstraints registers a named constrained route for the group.
-func (g *Group) RouteNamedWithConstraints(name, method, path string, constraints PathConstraints, handler HandlerFunc) {
-	g.handleNamedWithConstraints(method, path, name, constraints, handler)
-}
-
-// RouteWithMiddleware registers a route with route-specific middleware.
-func (g *Group) RouteWithMiddleware(method, path string, handler HandlerFunc, middlewares ...MiddlewareFunc) {
-	g.handleNamedWithConstraintsAndMiddleware(method, path, "", nil, handler, middlewares)
-}
-
-// RouteNamedWithMiddleware registers a named route with route-specific middleware.
-func (g *Group) RouteNamedWithMiddleware(name, method, path string, handler HandlerFunc, middlewares ...MiddlewareFunc) {
-	g.handleNamedWithConstraintsAndMiddleware(method, path, name, nil, handler, middlewares)
+// AddNamedConstraints registers a named route with route-level constraints.
+func (g *Group) AddNamedConstraints(name, method, path string, constraints Constraints, handler HandlerFunc) {
+	var middlewares []MiddlewareFunc
+	if constraints.Validate != nil {
+		middlewares = []MiddlewareFunc{constraints.Validate}
+	}
+	g.handleNamedWithConstraintsAndMiddleware(method, path, name, constraints.Path, handler, middlewares)
 }

@@ -1,0 +1,113 @@
+---
+title: Recipe - Nested Route Groups with Middleware Inheritance
+description: Deeply nested route groups with inherited middleware chains, group-level overrides, and route-specific middleware composition.
+---
+
+# Nested Route Groups with Middleware Inheritance
+
+Build deeply nested route hierarchies where middleware flows from parent to child, with overrides and route-level additions.
+
+## Custom middleware
+
+```go
+func Logger(prefix string) kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            log.Printf("[%s] %s %s", prefix, r.Method, r.URL.Path)
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+
+func RequireRole(role string) kern.MiddlewareFunc {
+    return func(next http.Handler) http.Handler {
+        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+            // role check logic
+            next.ServeHTTP(w, r)
+        })
+    }
+}
+```
+
+## Three-level group nesting
+
+```go
+func main() {
+    app := kern.New(kern.WithRecovery())
+```
+
+### Level 1: Global middleware
+
+```go
+    app.Use(Logger("global"))
+```
+
+### Level 2: API group with auth
+
+```go
+    api := app.Group("/api/v1", RequireRole("user"))
+
+    api.GET("/profile", func(c *kern.Context) {
+        c.Text(200, "user profile")
+    })
+```
+
+### Level 3: Admin subgroup with stricter middleware
+
+The admin group inherits `RequireRole("user")` from parent, adds `RequireRole("admin")`:
+
+```go
+    admin := api.Group("/admin", RequireRole("admin"))
+
+    admin.GET("/users", func(c *kern.Context) {
+        c.Text(200, "list all users")
+    })
+
+    admin.POST("/config", func(c *kern.Context) {
+        c.Text(200, "update config")
+    })
+```
+
+### Level 4: Per-route middleware override
+
+Route-specific middleware runs AFTER group middleware:
+
+```go
+    admin.AddConstraints("DELETE", "/users/{id}", kern.Constraints{
+        Validate: RequireRole("super-admin"),
+    }, func(c *kern.Context) {
+        c.Text(200, "delete user")
+    })
+```
+
+### Independent sub-groups at same level
+
+```go
+    public := api.Group("/public")
+    public.GET("/health", func(c *kern.Context) {
+        c.Text(200, "ok")
+    })
+```
+
+```go
+    app.Run(":8080")
+}
+```
+
+## Middleware execution order
+
+```text
+Request → global(Logger)
+        → api(RequireRole user)
+        → admin(RequireRole admin)
+        → route(RequireRole super-admin)
+        → handler
+```
+
+## Key patterns
+
+- **Inheritance**: Child groups inherit all parent middleware
+- **Composition**: Multiple middleware stack in declaration order
+- **Route-level**: `AddConstraints` adds middleware for a single route
+- **Override pattern**: Add stricter checks deeper in the group hierarchy
+- **Shared prefix**: All routes under `/api/v1/admin/*` share the same middleware chain

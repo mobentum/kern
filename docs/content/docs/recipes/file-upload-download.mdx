@@ -1,0 +1,143 @@
+---
+title: Recipe - File Upload & Download Service
+description: Full-file service with multipart upload, type/size validation, streaming download with Range support, and static serving.
+---
+
+# File Upload & Download Service
+
+Build a complete file service with upload validation, streaming download, and directory serving.
+
+## Upload handler with validation
+
+```go
+const maxUploadSize = 32 << 20 // 32 MB
+
+func uploadHandler(c *kern.Context) {
+    c.Request.Body = http.MaxBytesReader(c.Response, c.Request.Body, maxUploadSize)
+
+    file, err := c.File("file")
+    if err != nil {
+        c.Error(http.StatusBadRequest, "file is required")
+        return
+    }
+
+    // Validate file type by extension
+    allowed := map[string]bool{
+        ".jpg": true, ".jpeg": true, ".png": true,
+        ".gif": true, ".pdf": true, ".zip": true,
+    }
+    ext := strings.ToLower(filepath.Ext(file.Filename))
+    if !allowed[ext] {
+        c.Error(http.StatusUnprocessableEntity, "file type not allowed: "+ext)
+        return
+    }
+
+    // Validate MIME type
+    f, err := file.Open()
+    if err != nil {
+        c.Error(http.StatusInternalServerError, "failed to read file")
+        return
+    }
+    defer f.Close()
+
+    buf := make([]byte, 512)
+    if _, err := f.Read(buf); err != nil {
+        c.Error(http.StatusInternalServerError, "failed to read file header")
+        return
+    }
+    mimeType := http.DetectContentType(buf)
+    if !strings.HasPrefix(mimeType, "image/") && mimeType != "application/pdf" {
+        c.Error(http.StatusUnprocessableEntity, "invalid content type: "+mimeType)
+        return
+    }
+    f.Close()
+```
+
+## Save file to disk with unique name
+
+```go
+    uploadDir := "./uploads"
+    if err := os.MkdirAll(uploadDir, 0755); err != nil {
+        c.Error(http.StatusInternalServerError, "failed to create upload dir")
+        return
+    }
+
+    uniqueName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), file.Filename)
+    dst := filepath.Join(uploadDir, uniqueName)
+
+    if err := c.SaveFile(file, dst); err != nil {
+        c.Error(http.StatusInternalServerError, "failed to save file")
+        return
+    }
+
+    c.Created(map[string]string{
+        "filename": uniqueName,
+        "size":     fmt.Sprintf("%d bytes", file.Size),
+        "url":      "/files/" + uniqueName,
+    })
+}
+```
+
+## Download handler with Range support
+
+```go
+func downloadHandler(c *kern.Context) {
+    filename := c.Param("file")
+    filepath := filepath.Join("./uploads", filename)
+
+    if _, err := os.Stat(filepath); os.IsNotExist(err) {
+        c.Error(http.StatusNotFound, "file not found")
+        return
+    }
+
+    // Force download with Content-Disposition
+    c.DownloadFile(filepath, filename)
+}
+
+func streamHandler(c *kern.Context) {
+    filename := c.Param("file")
+    filepath := filepath.Join("./uploads", filename)
+
+    if _, err := os.Stat(filepath); os.IsNotExist(err) {
+        c.Error(http.StatusNotFound, "file not found")
+        return
+    }
+
+    // Inline streaming with Range support (partial content, seeking)
+    c.StreamFile(filepath)
+}
+```
+
+## Route setup
+
+```go
+func main() {
+    app := kern.New(
+        kern.WithRecovery(),
+        kern.WithBodyLimit(32 << 20),
+    )
+
+    api := app.Group("/api/v1")
+    api.POST("/upload", uploadHandler)
+    api.GET("/files/{file}", streamHandler)
+    api.GET("/download/{file}", downloadHandler)
+
+    // Serve uploaded files as static assets
+    app.Static("/uploads", "./uploads")
+
+    app.Run(":8080",
+        kern.WithReadTimeout(30*time.Second),
+        kern.WithWriteTimeout(120*time.Second), // allow slow uploads
+        kern.WithGracefulShutdown(10*time.Second),
+    )
+}
+```
+
+## Key patterns
+
+- **Size enforcement**: `http.MaxBytesReader` before reading multipart form
+- **Double validation**: Extension check + MIME type sniffing
+- **Streaming**: `c.StreamFile` supports `Range` header for video/audio seeking
+- **Download**: `c.DownloadFile` sets `Content-Disposition: attachment`
+- **Static serving**: `app.Static` serves the uploads directory
+- **Timeouts**: Longer write timeout accommodates slow upload connections
