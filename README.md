@@ -39,7 +39,8 @@ The framework stays intentionally small so engineers can understand internals qu
 Kern is inspired by:
 
 - **Go stdlib design**: composable interfaces and explicit behavior
-- **Bottle (Python)**: minimal API surface with practical defaults
+- **Flask (Python)**: minimal API surface with practical defaults
+- **Javalin (Java/Kotlin)**: lightweight, no-reflection design with fluent routing
 - **microkernel philosophy**: small trusted core with optional modules around it
 
 ## Features
@@ -268,25 +269,25 @@ app.Use(kern.Logger(kern.LoggerConfig{
 }))
 ```
 
-### Configuration (`github.com/mobentum/kern/extensions/config`)
+### Configuration (`github.com/mobentum/kern/extensions/xconfig`)
 
-`config` provides dotenv-style loading and typed environment access through a small loader API.
+`xconfig` provides dotenv-style loading and typed environment access through a small loader API.
 
-See full package docs and examples in [extensions/config/README.md](extensions/config/README.md).
+See full package docs and examples in [extensions/xconfig/README.md](extensions/xconfig/README.md).
 
-Runnable integration example: [extensions/config/examples/kern-integration](extensions/config/examples/kern-integration).
+Runnable integration example: [extensions/xconfig/examples/kern-integration](extensions/xconfig/examples/kern-integration).
 
 Install:
 
 ```bash
-go get github.com/mobentum/kern/extensions/config
+go get github.com/mobentum/kern/extensions/xconfig
 ```
 
 Use for app configuration:
 
 ```go
 import (
-    "github.com/mobentum/kern/extensions/config"
+    "github.com/mobentum/kern/extensions/xconfig"
 )
 
 type Config struct {
@@ -315,18 +316,18 @@ func LoadConfig() (*Config, error) {
 }
 ```
 
-### OpenAPI (`github.com/mobentum/kern/extensions/openapi`)
+### OpenAPI (`github.com/mobentum/kern/extensions/xopenapi`)
 
-`openapi` exposes a simple, explicit OpenAPI JSON endpoint and Swagger UI page.
+`xopenapi` exposes a simple, explicit OpenAPI JSON endpoint and Swagger UI page.
 
-See full package docs and examples in [extensions/openapi/README.md](extensions/openapi/README.md).
+See full package docs and examples in [extensions/xopenapi/README.md](extensions/xopenapi/README.md).
 
-Runnable integration example: [extensions/openapi/examples/kern-integration](extensions/openapi/examples/kern-integration).
+Runnable integration example: [extensions/xopenapi/examples/kern-integration](extensions/xopenapi/examples/kern-integration).
 
 Install:
 
 ```bash
-go get github.com/mobentum/kern/extensions/openapi
+go get github.com/mobentum/kern/extensions/xopenapi
 ```
 
 Use for API docs endpoints:
@@ -335,12 +336,12 @@ Use for API docs endpoints:
 import (
     "net/http"
 
-    "github.com/mobentum/kern/extensions/openapi"
+    "github.com/mobentum/kern/extensions/xopenapi"
 )
 
-openapi.Register(app, openapi.Config{
-    Info: openapi.Info{Title: "Users API", Version: "1.0.0"},
-    Routes: []openapi.Route{
+xopenapi.Register(app, xopenapi.Config{
+    Info: xopenapi.Info{Title: "Users API", Version: "1.0.0"},
+    Routes: []xopenapi.Route{
         {
             Method:      http.MethodGet,
             Path:        "/users/{id}",
@@ -352,18 +353,59 @@ openapi.Register(app, openapi.Config{
 })
 ```
 
-### gRPC (`github.com/mobentum/kern/extensions/grpc`)
+### Validation (`github.com/mobentum/kern/extensions/xvalidator`)
 
-`grpc` provides explicit gRPC server lifecycle management with optional health and reflection registration.
+`xvalidator` wraps [go-playground/validator](https://github.com/go-playground/validator) for struct validation with custom rules, messages, and cross-field checks.
 
-See full package docs and examples in [extensions/grpc/README.md](extensions/grpc/README.md).
+See full package docs and examples in [extensions/xvalidator/README.md](extensions/xvalidator/README.md).
 
-Runnable integration example: [extensions/grpc/examples/kern-integration](extensions/grpc/examples/kern-integration).
+Runnable integration example: [extensions/xvalidator/examples/kern-integration](extensions/xvalidator/examples/kern-integration).
 
 Install:
 
 ```bash
-go get github.com/mobentum/kern/extensions/grpc
+go get github.com/mobentum/kern/extensions/xvalidator
+```
+
+Use for request body validation:
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xvalidator"
+)
+
+type createUserRequest struct {
+    Name  string `json:"name"  validate:"required,min=3,max=50"`
+    Email string `json:"email" validate:"required,email"`
+}
+
+app.POST("/users", func(c *kern.Context) {
+    var req createUserRequest
+    if err := c.DecodeJSON(&req); err != nil {
+        c.Error(400, "invalid request body")
+        return
+    }
+    if err := xvalidator.Validate(req); err != nil {
+        c.JSON(422, map[string]interface{}{"error": "validation failed", "fields": err})
+        return
+    }
+    c.Created(req)
+})
+```
+
+### gRPC (`github.com/mobentum/kern/extensions/xgrpc`)
+
+`xgrpc` provides explicit gRPC server lifecycle management with optional health and reflection registration.
+
+See full package docs and examples in [extensions/xgrpc/README.md](extensions/xgrpc/README.md).
+
+Runnable integration example: [extensions/xgrpc/examples/kern-integration](extensions/xgrpc/examples/kern-integration).
+
+Install:
+
+```bash
+go get github.com/mobentum/kern/extensions/xgrpc
 ```
 
 Use for gRPC server startup:
@@ -373,10 +415,10 @@ import (
     "context"
     "time"
 
-    grpcx "github.com/mobentum/kern/extensions/grpc"
+    xgrpc "github.com/mobentum/kern/extensions/xgrpc"
 )
 
-srv, err := grpcx.Register(grpcx.Config{
+srv, err := xgrpc.Register(xgrpc.Config{
     Addr:             ":9090",
     EnableHealth:     true,
     EnableReflection: true,

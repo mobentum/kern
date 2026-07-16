@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package users.v1;
+
+option go_package = "github.com/mobentum/kern/extensions/xgrpc/examples/kern-integration/pb/users/v1;usersv1";
+
+service UsersService {
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+}
+
+message GetUserRequest {
+  string id = 1;
+}
+
+message GetUserResponse {
+  string id = 1;
+  string name = 2;
+}

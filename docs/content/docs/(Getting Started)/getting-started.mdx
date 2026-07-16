@@ -34,13 +34,19 @@ go get github.com/mobentum/kern/extensions/xlog
 If you want `.env` loading and environment binding, add the optional config module:
 
 ```bash
-go get github.com/mobentum/kern/extensions/config
+go get github.com/mobentum/kern/extensions/xconfig
 ```
 
 If you want OpenAPI JSON + Swagger UI endpoints, add the optional OpenAPI module:
 
 ```bash
-go get github.com/mobentum/kern/extensions/openapi
+go get github.com/mobentum/kern/extensions/xopenapi
+```
+
+If you want struct validation via `go-playground/validator`, add the optional validation module:
+
+```bash
+go get github.com/mobentum/kern/extensions/xvalidator
 ```
 
 ## Your First Application
@@ -168,15 +174,15 @@ func main() {
 }
 ```
 
-## Configuration with config (Optional)
+## Configuration with xconfig (Optional)
 
-Use the optional `config` module when you want `.env` file loading and typed environment access.
+Use the optional `xconfig` module when you want `.env` file loading and typed environment access.
 
 ```go
 package main
 
 import (
-    "github.com/mobentum/kern/extensions/config"
+    "github.com/mobentum/kern/extensions/xconfig"
 )
 
 type Config struct {
@@ -185,9 +191,9 @@ type Config struct {
 }
 
 func loadConfig() (*Config, error) {
-    loader, err := config.New(
-        config.WithPrefix("APP"),
-        config.WithDotEnv(".env"),
+    loader, err := xconfig.New(
+        xconfig.WithPrefix("APP"),
+        xconfig.WithDotEnv(".env"),
     )
     if err != nil {
         return nil, err
@@ -205,9 +211,9 @@ func loadConfig() (*Config, error) {
 }
 ```
 
-## OpenAPI with openapi (Optional)
+## OpenAPI with xopenapi (Optional)
 
-Use the optional `openapi` module when you want explicit API docs endpoints without reflection.
+Use the optional `xopenapi` module when you want explicit API docs endpoints without reflection.
 
 ```go
 package main
@@ -215,12 +221,12 @@ package main
 import (
     "net/http"
 
-    "github.com/mobentum/kern/extensions/openapi"
+    "github.com/mobentum/kern/extensions/xopenapi"
 )
 
-openapi.Register(app, openapi.Config{
-    Info: openapi.Info{Title: "My API", Version: "1.0.0"},
-    Routes: []openapi.Route{
+xopenapi.Register(app, xopenapi.Config{
+    Info: xopenapi.Info{Title: "My API", Version: "1.0.0"},
+    Routes: []xopenapi.Route{
         {
             Method:      http.MethodGet,
             Path:        "/hello/{name}",

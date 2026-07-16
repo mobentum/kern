@@ -1,18 +1,18 @@
 ---
 title: Recipe - OpenAPI Documentation with Swagger UI
-description: Document your Kern API routes with OpenAPI 3.0.3 using the extensions/openapi package, served as JSON and Swagger UI.
+description: Document your Kern API routes with OpenAPI 3.0.3 using the extensions/xopenapi package, served as JSON and Swagger UI.
 ---
 
 # OpenAPI Documentation with Swagger UI
 
-Use `extensions/openapi` to document routes explicitly and serve both a JSON schema and a Swagger UI page.
+Use `extensions/xopenapi` to document routes explicitly and serve both a JSON schema and a Swagger UI page.
 
 ## Setup
 
 ```go
 import (
     "github.com/mobentum/kern"
-    "github.com/mobentum/kern/extensions/openapi"
+    "github.com/mobentum/kern/extensions/xopenapi"
 )
 
 type CreateUserRequest struct {
@@ -51,19 +51,19 @@ func main() {
 ## Register OpenAPI documentation
 
 ```go
-    if err := openapi.Register(app, openapi.Config{
+    if err := xopenapi.Register(app, xopenapi.Config{
         JSONPath:  "/openapi.json",
         DocsPath:  "/docs",
         DocsTitle: "My API Docs",
-        Info: openapi.Info{
+        Info: xopenapi.Info{
             Title:       "User API",
             Version:     "1.0.0",
             Description: "A simple user management API",
         },
-        Servers: []openapi.Server{
+        Servers: []xopenapi.Server{
             {URL: "http://localhost:8080", Description: "Local"},
         },
-        Routes: []openapi.Route{
+        Routes: []xopenapi.Route{
             {
                 Method:      "POST",
                 Path:        "/api/users",
@@ -71,10 +71,10 @@ func main() {
                 Description: "Creates a new user and returns the created resource.",
                 OperationID: "createUser",
                 Tags:        []string{"Users"},
-                RequestBody: &openapi.RequestBody{
+                RequestBody: &xopenapi.RequestBody{
                     Description: "User creation payload",
                     Required:    true,
-                    Content: map[string]openapi.MediaType{
+                    Content: map[string]xopenapi.MediaType{
                         "application/json": {
                             Schema: map[string]interface{}{
                                 "type": "object",
@@ -87,10 +87,10 @@ func main() {
                         },
                     },
                 },
-                Responses: map[string]openapi.Response{
+                Responses: map[string]xopenapi.Response{
                     "201": {
                         Description: "User created",
-                        Content: map[string]openapi.MediaType{
+                        Content: map[string]xopenapi.MediaType{
                             "application/json": {
                                 Schema: map[string]interface{}{
                                     "type": "object",
@@ -116,13 +116,13 @@ func main() {
 For larger APIs, group routes by tag and scope them:
 
 ```go
-    var userRoutes, adminRoutes []openapi.Route
+    var userRoutes, adminRoutes []xopenapi.Route
     // ... populate route metadata
 
-    openapi.Register(app, openapi.Config{
+    xopenapi.Register(app, xopenapi.Config{
         JSONPath: "/openapi.json",
         DocsPath: "/docs",
-        Info:     openapi.Info{Title: "Multi-scope API", Version: "2.0.0"},
+        Info:     xopenapi.Info{Title: "Multi-scope API", Version: "2.0.0"},
         Routes:   append(userRoutes, adminRoutes...),
     })
 ```

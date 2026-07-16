@@ -1,11 +1,11 @@
 ---
 title: Recipe - CRUD REST API with Validation
-description: Full CRUD REST API with Kern's binding, validation tags, path constraints, and route-level input validation middleware.
+description: Full CRUD REST API with Kern's binding, xvalidator, path constraints, and route-level input validation middleware.
 ---
 
 # CRUD REST API with Validation
 
-Build a type-safe CRUD API using Kern's binding, built-in validation, and path constraints.
+Build a type-safe CRUD API using Kern's binding, xvalidator (based on go-playground/validator), and path constraints.
 
 ## Struct with validation tags
 
@@ -121,8 +121,11 @@ func ValidateBody[T any]() kern.MiddlewareFunc {
                 c.Error(http.StatusBadRequest, "invalid request body")
                 return
             }
-            if err := c.Validate(&req); err != nil {
-                c.JSONError(http.StatusUnprocessableEntity, "validation failed", err)
+            if err := xvalidator.Validate(&req); err != nil {
+                c.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
+                    "error":  "validation failed",
+                    "fields": err,
+                })
                 return
             }
             ctx := context.WithValue(r.Context(), validatedBodyKey{}, &req)
@@ -200,7 +203,8 @@ func main() {
 
 ## Key patterns
 
-- **Validation tags**: `required`, `min`, `max`, `oneof`, `email` on struct fields
+- **Validation tags**: `required`, `min`, `max`, `oneof`, `email` on struct fields via `xvalidator`
+- **Custom messages**: override error messages per tag with `xvalidator.Default().SetMessages()`
 - **Path constraints**: `kern.UintPathConstraint` ensures type-safe path params
 - **Error responses**: Structured `c.Error` and `c.JSONError` for consistent API errors
 - **Thread-safe store**: `sync.RWMutex` for concurrent access

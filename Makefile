@@ -3,8 +3,10 @@ SHELL := /bin/bash
 BENCH_DIR := benchmarks/fourway
 RESULTS_DIR := $(BENCH_DIR)/results
 PROFILE_DIR := $(RESULTS_DIR)/profiles
-GRPC_DIR := extensions/grpc
+GRPC_DIR := extensions/xgrpc
 GRPC_EXAMPLE_DIR := $(GRPC_DIR)/examples/kern-integration
+EXTENSION_DIRS := extensions/xconfig extensions/xgrpc extensions/xopenapi extensions/xlog extensions/xvalidator
+EXTENSION_EXAMPLE_DIRS := extensions/xconfig/examples/kern-integration extensions/xgrpc/examples/kern-integration extensions/xopenapi/examples/kern-integration extensions/xlog/examples/kern-integration extensions/xvalidator/examples/kern-integration
 
 BENCHTIME ?= 5s
 BENCH_PATTERN ?= BenchmarkFramework
@@ -14,7 +16,7 @@ CPU_PROFILE ?= $(PROFILE_DIR)/bench_cpu.out
 MEM_PROFILE ?= $(PROFILE_DIR)/bench_mem.out
 PPROF_SYMBOL ?= github.com/mobentum/kern/benchmarks/fourway.benchmarkKernQueryAccess.func1
 
-.PHONY: help prepare bench bench-short bench-full bench-save bench-kern-query bench-kern-path bench-cpu bench-mem pprof-top-cpu pprof-top-mem pprof-list-cpu pprof-list-mem test test-grpc test-grpc-example build-grpc ci-grpc check-buf grpc-buf-lint grpc-buf-build grpc-buf-generate grpc-buf ci-proto ci-all ci-all-local clean-profiles clean-artifacts ci-go ci-benchmark-smoke docs-install docs-lint docs-typecheck docs-build ci-docs go-vet go-lint go-vuln go-quality check-go-tools
+.PHONY: help prepare bench bench-short bench-full bench-save bench-kern-query bench-kern-path bench-cpu bench-mem pprof-top-cpu pprof-top-mem pprof-list-cpu pprof-list-mem test test-grpc test-grpc-example build-grpc ci-grpc check-buf grpc-buf-lint grpc-buf-build grpc-buf-generate grpc-buf ci-proto ci-all ci-all-local clean-profiles clean-artifacts ci-go ci-benchmark-smoke docs-install docs-lint docs-typecheck docs-build ci-docs go-vet go-lint go-vuln go-quality check-go-tools release-patch release-minor release-major
 
 help:
 	@echo "Benchmark and pprof workflow"
@@ -32,14 +34,19 @@ help:
 	@echo "  make ci-go                       # CI build + test for the root Go module"
 	@echo "  make go-quality                  # go vet + golangci-lint + govulncheck"
 	@echo "  make check-go-tools              # verify golangci-lint and govulncheck are installed"
-	@echo "  make ci-grpc                     # CI build + test for extensions/grpc"
+	@echo "  make ci-grpc                     # CI build + test for extensions/xgrpc"
 	@echo "  make ci-benchmark-smoke          # CI benchmark sanity check for the benchmark module"
 	@echo "  make ci-proto                    # CI proto lint + build (Buf) for grpc example"
-	@echo "  make ci-all                      # run ci-go + ci-grpc + ci-benchmark-smoke + ci-proto"
+	@echo "  make ci-all                      # run ci-go + ci-extensions + ci-benchmark-smoke + ci-proto"
 	@echo "  make ci-all-local                # run full checks, skip ci-proto when buf is not installed"
 	@echo "  make grpc-buf-generate           # regenerate grpc example stubs with Buf"
 	@echo "  make ci-docs                     # CI install + lint + type-check + build for docs"
 	@echo "  make clean-artifacts             # remove generated benchmark/test artifacts"
+	@echo ""
+	@echo "Release:"
+	@echo "  make release-patch               # bump VERSION patch (0.1.0 -> 0.1.1)"
+	@echo "  make release-minor               # bump VERSION minor (0.1.0 -> 0.2.0)"
+	@echo "  make release-major               # bump VERSION major (0.1.0 -> 1.0.0)"
 	@echo ""
 	@echo "Variables:"
 	@echo "  BENCHTIME=5s BENCH_PATTERN=BenchmarkFramework RESULT_FILE=... CPU_PROFILE=... MEM_PROFILE=... PPROF_SYMBOL=..."
@@ -86,16 +93,23 @@ pprof-list-mem:
 test:
 	go test ./...
 
-build-grpc:
-	go -C $(GRPC_DIR) build ./...
+build-extension:
+	go -C $(dir) build ./...
 
-test-grpc:
-	go -C $(GRPC_DIR) test ./...
+test-extension:
+	go -C $(dir) test -race -count=1 ./...
 
-test-grpc-example:
-	go -C $(GRPC_EXAMPLE_DIR) test ./...
-
-ci-grpc: build-grpc test-grpc test-grpc-example
+ci-extensions:
+	@for dir in $(EXTENSION_DIRS); do \
+		echo "=== Building $$dir ==="; \
+		$(MAKE) build-extension dir=$$dir; \
+		echo "=== Testing $$dir ==="; \
+		$(MAKE) test-extension dir=$$dir; \
+	done
+	@for dir in $(EXTENSION_EXAMPLE_DIRS); do \
+		echo "=== Building example $$dir ==="; \
+		$(MAKE) build-extension dir=$$dir; \
+	done
 
 check-buf:
 	@command -v buf >/dev/null 2>&1 || (echo "buf not found in PATH. Install with: brew install bufbuild/buf/buf" && exit 1)
@@ -113,9 +127,9 @@ grpc-buf: grpc-buf-lint grpc-buf-build
 
 ci-proto: grpc-buf
 
-ci-all: ci-go ci-grpc ci-benchmark-smoke ci-proto
+ci-all: ci-go ci-extensions ci-benchmark-smoke ci-proto
 
-ci-all-local: ci-go ci-grpc ci-benchmark-smoke
+ci-all-local: ci-go ci-extensions ci-benchmark-smoke
 	@if command -v buf >/dev/null 2>&1; then \
 		$(MAKE) ci-proto; \
 	else \
@@ -125,7 +139,7 @@ ci-all-local: ci-go ci-grpc ci-benchmark-smoke
 ci-go:
 	$(MAKE) go-quality
 	go build ./...
-	go test -v ./...
+	go test -race -count=1 ./...
 
 go-vet:
 	go vet ./...
@@ -164,3 +178,12 @@ clean-profiles:
 
 clean-artifacts: clean-profiles
 	rm -f *.test $(BENCH_DIR)/*.test $(RESULTS_DIR)/bench-*.txt
+
+release-patch:
+	scripts/release.sh patch
+
+release-minor:
+	scripts/release.sh minor
+
+release-major:
+	scripts/release.sh major

@@ -51,5 +51,8 @@ _examples/**uploads
 build/
 **/build/
 
+# compiled example binaries
+**/kern-integration
+
 handoff/
 ROADMAP_STATUS.md

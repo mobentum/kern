@@ -69,9 +69,9 @@ app.Use(kern.Logger(kern.LoggerConfig{
 }))
 ```
 
-## Optional package (`github.com/mobentum/kern/extensions/openapi`)
+## Optional package (`github.com/mobentum/kern/extensions/xopenapi`)
 
-### `openapi.Register(app, config)`
+### `xopenapi.Register(app, config)`
 
 Registers OpenAPI JSON and Swagger UI endpoints.
 
@@ -85,12 +85,12 @@ Example:
 import (
     "net/http"
 
-    "github.com/mobentum/kern/extensions/openapi"
+    "github.com/mobentum/kern/extensions/xopenapi"
 )
 
-openapi.Register(app, openapi.Config{
-    Info: openapi.Info{Title: "Users API", Version: "1.0.0"},
-    Routes: []openapi.Route{
+xopenapi.Register(app, xopenapi.Config{
+    Info: xopenapi.Info{Title: "Users API", Version: "1.0.0"},
+    Routes: []xopenapi.Route{
         {
             Method:      http.MethodGet,
             Path:        "/users/{id}",
