@@ -82,7 +82,7 @@ func (g *Group) handleNamedWithConstraintsAndMiddleware(
 	}
 
 	// handle request with middlewares
-	pattern := method + " " + path
+	pattern := method + " " + normalizePath(path)
 	g.app.router.Handle(pattern, wrappedHandler)
 }
 
