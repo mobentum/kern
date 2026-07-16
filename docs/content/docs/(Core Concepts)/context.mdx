@@ -232,6 +232,64 @@ c.SetCookie(&http.Cookie{
 - Use `JSON`, `Text`, `HTML`, and `Data` for explicit response generation.
 - Use file helpers for upload, download, and streaming workflows.
 
+## Testing
+
+Kern provides a `NewTestClient` to simplify handler testing without starting a real HTTP server.
+
+### Basic Setup
+
+```go
+import (
+    "testing"
+    "github.com/mobentum/kern"
+)
+
+func TestMyHandler(t *testing.T) {
+    app := kern.New()
+    app.GET("/hello/{name}", func(c *kern.Context) {
+        _ = c.JSON(200, map[string]string{"message": "Hello " + c.Param("name")})
+    })
+
+    client := kern.NewTestClient(app)
+    res := client.Get("/hello/kern")
+
+    if res.Code != 200 {
+        t.Fatalf("got %d, want 200", res.Code)
+    }
+}
+```
+
+### Available Methods
+
+- `Get(path)` — sends a GET request
+- `Post(path, body)` — sends a POST request
+- `PostJSON(path, payload)` — sends a POST with JSON body and `Content-Type` header
+- `Put(path, body)` — sends a PUT request
+- `Delete(path)` — sends a DELETE request
+- `Request(method, path, body)` — sends a request with arbitrary method
+- `Do(req)` — sends a pre-built `*http.Request`
+- `WithHeader(key, value)` — sets a default header on all subsequent requests
+
+### Default Headers
+
+```go
+client := kern.NewTestClient(app).
+    WithHeader("Authorization", "Bearer test-token")
+
+res := client.Get("/protected")
+```
+
+### JSON Body
+
+```go
+type input struct {
+    Name string `json:"name"`
+}
+
+client := kern.NewTestClient(app)
+res := client.PostJSON("/users", input{Name: "alice"})
+```
+
 ## FAQ
 
 ### Is Kern `Context` compatible with `net/http`?

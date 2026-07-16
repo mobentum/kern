@@ -49,6 +49,12 @@ If you want struct validation via `go-playground/validator`, add the optional va
 go get github.com/mobentum/kern/extensions/xvalidator
 ```
 
+If you want distributed tracing with OpenTelemetry, add the optional tracing module:
+
+```bash
+go get github.com/mobentum/kern/extensions/xotel
+```
+
 ## Your First Application
 
 ### 1. Create a Project
@@ -241,6 +247,23 @@ xopenapi.Register(app, xopenapi.Config{
 // - /openapi.json
 // - /docs
 ```
+
+## Scaffolding with kern-cli
+
+Kern provides a CLI tool to scaffold new projects:
+
+```bash
+# Install the CLI
+go install github.com/mobentum/kern-cli@latest
+
+# Create a new project
+kern-cli new myapp
+
+# Create a REST API project with config, logging, and health checks
+kern-cli new myapi -template rest-api
+```
+
+The CLI generates a ready-to-run project with `go.mod`, `main.go`, middleware setup, and development helpers.
 
 ## What's Next?
 

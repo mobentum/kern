@@ -1,0 +1,95 @@
+---
+title: OpenTelemetry Middleware
+description: OpenTelemetry tracing middleware for Kern.
+---
+
+# OpenTelemetry Middleware
+
+The `xotel` package provides OpenTelemetry tracing middleware for Kern applications.
+
+## Installation
+
+```bash
+go get github.com/mobentum/kern/extensions/xotel
+```
+
+## Basic Usage
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xotel"
+)
+
+func main() {
+    app := kern.New()
+
+    app.Use(xotel.Middleware(xotel.Config{
+        ServiceName: "my-api",
+    }))
+
+    app.GET("/users/{id}", func(c *kern.Context) {
+        _ = c.JSON(200, map[string]string{"id": c.Param("id")})
+    })
+
+    app.Run(":8080")
+}
+```
+
+## Configuration
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `TracerProvider` | `trace.TracerProvider` | `otel.GetTracerProvider()` | Custom tracer provider |
+| `Propagator` | `propagation.TextMapPropagator` | `otel.GetTextMapPropagator()` | Trace context propagator |
+| `ServiceName` | `string` | `""` | Service name on every span |
+| `Skip` | `func(*http.Request) bool` | `nil` | Skip tracing for specific requests |
+
+## Skip Health Checks
+
+```go
+app.Use(xotel.Middleware(xotel.Config{
+    ServiceName: "my-api",
+    Skip: func(r *http.Request) bool {
+        return r.URL.Path == "/health"
+    },
+}))
+```
+
+## With Custom Tracer Provider
+
+```go
+import (
+    "go.opentelemetry.io/otel"
+    "go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+    "go.opentelemetry.io/otel/sdk/trace"
+)
+
+func setupOTel() {
+    exporter, _ := otlptracehttp.New(ctx)
+    tp := trace.NewTracerProvider(trace.WithBatcher(exporter))
+    otel.SetTracerProvider(tp)
+}
+
+// In main:
+app.Use(xotel.Middleware(xotel.Config{
+    TracerProvider: otel.GetTracerProvider(),
+    ServiceName:    "my-api",
+}))
+```
+
+## Span Attributes
+
+Each request span includes:
+
+- `http.request.method` — HTTP method (GET, POST, etc.)
+- `url.path` — Request path
+- `url.query` — Raw query string
+- `network.protocol.version` — HTTP version
+- `user_agent.original` — User-Agent header
+- `http.response.status_code` — Response status code
+
+## See Also
+
+- [Middleware Catalog](/docs/middleware-catalog) - Browse all available middleware
+- [Distributed Tracing Recipe](/docs/recipes/distributed-tracing) - End-to-end tracing setup

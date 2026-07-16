@@ -102,6 +102,31 @@ xopenapi.Register(app, xopenapi.Config{
 })
 ```
 
+## Optional package (`github.com/mobentum/kern/extensions/xotel`)
+
+### `xotel.Middleware(configs ...xotel.Config)`
+
+OpenTelemetry tracing middleware that creates a span for each request.
+
+Config options:
+- `TracerProvider`: custom tracer provider (defaults to `otel.GetTracerProvider()`)
+- `Propagator`: context propagator (defaults to `otel.GetTextMapPropagator()`)
+- `ServiceName`: service name attribute on every span
+- `Skip`: optional function to bypass tracing for specific requests
+
+Example:
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xotel"
+)
+
+app.Use(xotel.Middleware(xotel.Config{
+    ServiceName: "users-api",
+}))
+```
+
 ## Optional package (`github.com/mobentum/kern/middleware`)
 
 ### `middleware.RequestID()`
@@ -210,6 +235,7 @@ if ok {
 - [RequestGuard](/docs/middleware-guides/request-guard)
 - [ResponseLimit](/docs/middleware-guides/response-limit)
 - [Session](/docs/middleware-guides/session)
+- [OpenTelemetry](/docs/middleware-guides/otel)
 
 ## See Also
 

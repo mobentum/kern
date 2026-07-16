@@ -28,6 +28,7 @@ jobs:
             extensions/xgrpc/go.sum
             extensions/xlog/go.sum
             extensions/xopenapi/go.sum
+            extensions/xotel/go.sum
             extensions/xvalidator/go.sum
 
       - name: Set up golangci-lint
@@ -75,6 +76,7 @@ jobs:
           - extensions/xgrpc
           - extensions/xlog
           - extensions/xopenapi
+          - extensions/xotel
           - extensions/xvalidator
 
     steps:
