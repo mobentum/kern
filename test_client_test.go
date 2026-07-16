@@ -11,7 +11,7 @@ func TestTestClient_GetAndDefaultHeaders(t *testing.T) {
 		_ = c.Text(http.StatusOK, "%s", c.GetHeader("X-User"))
 	})
 
-	client := newTestClient(app).WithHeader("X-User", "alice")
+	client := NewTestClient(app).WithHeader("X-User", "alice")
 	res := client.Get("/whoami")
 
 	if res.Code != http.StatusOK {
@@ -37,7 +37,7 @@ func TestTestClient_PostJSON(t *testing.T) {
 		_ = c.Text(http.StatusCreated, "%s", in.Name)
 	})
 
-	client := newTestClient(app)
+	client := NewTestClient(app)
 	res := client.PostJSON("/users", input{Name: "mobentum"})
 
 	if res.Code != http.StatusCreated {
