@@ -332,6 +332,7 @@ func (app *App) handleNamedWithConstraintsAndMiddleware(
 	routeMiddlewares []MiddlewareFunc,
 ) {
 	// std lib pattern is space delimiter of method and path
+	path = normalizePath(path)
 	pattern := method + " " + path
 	routeInfo := RouteInfo{Method: method, Path: path, Name: name}
 	app.registerRoute(routeInfo)
@@ -681,4 +682,37 @@ func (app *App) logError(msg string, err error, attrs ...slog.Attr) {
 	}
 
 	app.logger.Print(msg)
+}
+
+func normalizePath(path string) string {
+	if !strings.ContainsRune(path, ':') {
+		return path
+	}
+	var b strings.Builder
+	b.Grow(len(path))
+	i := 0
+	for i < len(path) {
+		if path[i] == ':' {
+			start := i
+			i++
+			for i < len(path) && isAlphaNum(path[i]) {
+				i++
+			}
+			if i > start+1 {
+				b.WriteByte('{')
+				b.WriteString(path[start+1 : i])
+				b.WriteByte('}')
+			} else {
+				b.WriteByte(':')
+			}
+		} else {
+			b.WriteByte(path[i])
+			i++
+		}
+	}
+	return b.String()
+}
+
+func isAlphaNum(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
 }

@@ -62,6 +62,36 @@ func TestApp_PathParameters(t *testing.T) {
 	}
 }
 
+func TestApp_GinStylePathParameters(t *testing.T) {
+	app := New()
+	app.GET("/users/:id/posts/:postId", func(c *Context) {
+		_ = c.Text(200, "%s-%s", c.Param("id"), c.Param("postId"))
+	})
+
+	req := newRequest(http.MethodGet, "/users/123/posts/456")
+	res := serve(app, req)
+
+	if res.Body.String() != "123-456" {
+		t.Errorf("expected '123-456', got '%s'", res.Body.String())
+	}
+}
+
+func TestNormalizePath(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"/users/:id", "/users/{id}"},
+		{"/users/:id/posts/:postId", "/users/{id}/posts/{postId}"},
+		{"/users/{id}", "/users/{id}"},
+		{"/static/", "/static/"},
+		{"/api/:version/users/:id", "/api/{version}/users/{id}"},
+		{"/users/:id/:action", "/users/{id}/{action}"},
+	}
+	for _, tt := range tests {
+		if got := normalizePath(tt.in); got != tt.want {
+			t.Errorf("normalizePath(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}
+
 func TestApp_MiddlewareChain(t *testing.T) {
 	app := New()
 	var order []int

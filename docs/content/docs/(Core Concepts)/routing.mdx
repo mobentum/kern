@@ -26,16 +26,27 @@ app.OPTIONS("/api", showOptions)
 
 ## Path Parameters
 
-Kern utilizes the robust pattern matching from Go 1.22's `net/http`. Parameters are defined using `{name}` syntax in the path.
+Kern supports two syntaxes for path parameters:
 
-If you want lightweight Go routing without a custom router abstraction, Kern keeps route definitions close to the standard library while adding clearer ergonomics.
+| Syntax | Example | Origin |
+|--------|---------|--------|
+| `{name}` | `/users/{id}` | Go 1.22+ stdlib (recommended) |
+| `:name` | `/users/:id` | Gin / Chi compatibility |
+
+Both are interchangeable. Use whichever you prefer.
 
 ### Capturing Values
 
 To retrieve a parameter value, use `c.Param("name")`.
 
 ```go
-// Route: /users/{id}
+// Route: /users/:id
+app.GET("/users/:id", func(c *kern.Context) {
+    id := c.Param("id")
+    c.Text(200, "User ID: %s", id)
+})
+
+// Equivalent:
 app.GET("/users/{id}", func(c *kern.Context) {
     id := c.Param("id")
     c.Text(200, "User ID: %s", id)
@@ -47,8 +58,8 @@ app.GET("/users/{id}", func(c *kern.Context) {
 You can define multiple parameters in a single route.
 
 ```go
-// Route: /posts/{category}/{id}
-app.GET("/posts/{category}/{id}", func(c *kern.Context) {
+// Route: /posts/:category/:id
+app.GET("/posts/:category/:id", func(c *kern.Context) {
     category := c.Param("category")
     id := c.Param("id")
     
