@@ -1,6 +1,6 @@
 module github.com/mobentum/kern/extensions/xvalidator
 
-go 1.25.0
+go 1.25.12
 
 require github.com/go-playground/validator/v10 v10.30.3
 
