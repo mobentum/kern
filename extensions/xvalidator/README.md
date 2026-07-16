@@ -9,6 +9,8 @@
 - Struct-level validation (cross-field checks)
 - Nested struct and slice validation via `dive`
 - Works with `c.DecodeJSON()` / `c.Bind()` — validate the decoded struct in a separate step
+- `BodyValidator[T]()` middleware — decode + validate in one step via `AddConstraints`
+- `Validated[T]()` — retrieve the validated struct from the request context
 
 ## Install
 
@@ -125,15 +127,37 @@ type orderRequest struct {
 }
 ```
 
-## Runnable Example
+## Middleware
 
-A complete kern integration example lives in:
+`xvalidator.BodyValidator[T]()` decodes and validates the request body in a single middleware step. The validated struct is stored in the request context and can be retrieved with `xvalidator.Validated[T]()`.
 
-- `extensions/xvalidator/examples/kern-integration`
+```go
+type createUserRequest struct {
+    Name  string `json:"name"  validate:"required,min=3,max=50"`
+    Email string `json:"email" validate:"required,email"`
+    Age   int    `json:"age"   validate:"gte=18,lte=120"`
+}
 
-Run it locally:
+app.AddConstraints(http.MethodPost, "/users", kern.Constraints{
+    Validate: xvalidator.BodyValidator[createUserRequest](),
+}, func(c *kern.Context) {
+    req, ok := xvalidator.Validated[createUserRequest](c.Context())
+    if !ok {
+        c.NoContent(http.StatusInternalServerError)
+        return
+    }
+    _ = c.JSON(http.StatusCreated, map[string]string{"name": req.Name})
+})
+```
+
+## Runnable Examples
+
+- `extensions/xvalidator/examples/kern-integration` — in-handler validation
+- `extensions/xvalidator/examples/kern-addconstraints` — middleware validation with `AddConstraints`
+
+Run them locally:
 
 ```bash
-cd extensions/xvalidator/examples/kern-integration
+cd extensions/xvalidator/examples/<name>
 go run .
 ```
