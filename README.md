@@ -46,12 +46,14 @@ Kern is inspired by:
 ## Features
 
 - **Go 1.22+ native routing** via `http.ServeMux`
+- **Dual path parameter syntax** — both `:param` and `{param}` styles are supported interchangeably
 - **Named routes & path constraints** — typed URL params (`kern.UintPathConstraint`) and route lookup by name
 - **Built-in auth** — `BearerAuth` and `BasicAuth` middleware ship in core
 - **Route-specific middleware** — apply guards per route with `AddConstraints()`, no group nesting needed
 - **Structured request binding** — `Bind()` / `BindQuery()` / `BindForm()` / `BindHeader()` with struct tags
 - **File handling** — multipart upload (`SaveFile`), download (`DownloadFile`), streaming with range support (`StreamFile`)
 - **Conditional requests** — built-in `ETag`, `LastModified`, `If-None-Match` / `If-Modified-Since` evaluation
+- **Built-in test client** — `kern.NewTestClient(app)` for handler tests without a real HTTP server
 - **Context pooling** for lower allocation pressure
 - **Middleware chaining** with standard `func(http.Handler) http.Handler`
 - **Route groups** for shared prefixes and middleware
@@ -89,9 +91,9 @@ CI check order:
 
 | Package | Tests | Build | Coverage |
 |---------|------:|-------|---------:|
-| `kern` (core) | 104 | ✅ | 81.4% |
+| `kern` (core) | 107 | ✅ | 81.5% |
 | `kern/middleware` | 55 | ✅ | 82.5% |
-| **Total** | **159** | **✅** | **~82%** |
+| **Total** | **162** | **✅** | **~82%** |
 
 All tests pass with zero failures across both packages.
 
@@ -109,9 +111,10 @@ func main() {
         c.JSON(200, map[string]string{"message": "hello from kern"})
     })
 
-    app.GET("/users/{id}", func(c *kern.Context) {
+    app.GET("/users/:id", func(c *kern.Context) {
         c.JSON(200, map[string]string{"id": c.Param("id")})
     })
+    // Both :param and {param} syntax are supported interchangeably.
 
     _ = app.Run(":8080")
 }
@@ -131,10 +134,15 @@ app.POST("/users", handler)
 app.Group("/api")
 app.Static("/static/", "./public")
 
+// Test without a real HTTP server
+client := kern.NewTestClient(app)
+res := client.Get("/users")
+res := client.PostJSON("/users", payload)
+
 app.Run(":8080")
 app.RunTLS(":8443", "cert.pem", "key.pem")
 
-app.AddConstraints("GET", "/users/{id}", kern.Constraints{
+app.AddConstraints("GET", "/users/:id", kern.Constraints{
     Path: kern.PathConstraints{"id": kern.UintPathConstraint},
 }, handler)
 
@@ -351,6 +359,31 @@ xopenapi.Register(app, xopenapi.Config{
         },
     },
 })
+```
+
+### OpenTelemetry Tracing (`github.com/mobentum/kern/extensions/xotel`)
+
+`xotel` provides OpenTelemetry tracing middleware that creates a span per request.
+
+See full package docs and examples in [extensions/xotel/README.md](extensions/xotel/README.md).
+
+Install:
+
+```bash
+go get github.com/mobentum/kern/extensions/xotel
+```
+
+Use for distributed tracing:
+
+```go
+import (
+    "github.com/mobentum/kern"
+    "github.com/mobentum/kern/extensions/xotel"
+)
+
+app.Use(xotel.Middleware(xotel.Config{
+    ServiceName: "users-api",
+}))
 ```
 
 ### Validation (`github.com/mobentum/kern/extensions/xvalidator`)
