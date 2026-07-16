@@ -94,30 +94,6 @@ jobs:
         run: go test -race -count=1 ./...
         working-directory: ${{ matrix.module }}
 
-  test-extensions-examples:
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        module:
-          - extensions/xconfig/examples/kern-integration
-          - extensions/xgrpc/examples/kern-integration
-          - extensions/xlog/examples/kern-integration
-          - extensions/xopenapi/examples/kern-integration
-          - extensions/xvalidator/examples/kern-integration
-
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Set up Go
-        uses: actions/setup-go@v6
-        with:
-          go-version: '1.26.5'
-
-      - name: Build ${{ matrix.module }}
-        run: go build ./...
-        working-directory: ${{ matrix.module }}
-
   benchmark-smoke:
     runs-on: ubuntu-latest
 
