@@ -1,6 +1,6 @@
 ---
 title: Recipe - CRUD REST API with Validation
-description: Full CRUD REST API with Kern's binding, xvalidator, path constraints, and route-level input validation middleware.
+description: Full CRUD REST API using xvalidator.BodyValidator[T] middleware for route-level decode + validate, path constraints, and an in-memory store.
 ---
 
 # CRUD REST API with Validation
@@ -105,37 +105,9 @@ func (s *UserStore) Delete(id int) bool {
 }
 ```
 
-## Validation middleware
-
-A generic middleware that decodes and validates the request body, then passes the parsed value through the request context:
-
-```go
-type validatedBodyKey struct{}
-
-func ValidateBody[T any]() kern.MiddlewareFunc {
-    return func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            var req T
-            c := kern.NewContext(w, r)
-            if err := c.DecodeJSON(&req); err != nil {
-                c.Error(http.StatusBadRequest, "invalid request body")
-                return
-            }
-            if err := xvalidator.Validate(&req); err != nil {
-                c.JSON(http.StatusUnprocessableEntity, map[string]interface{}{
-                    "error":  "validation failed",
-                    "fields": err,
-                })
-                return
-            }
-            ctx := context.WithValue(r.Context(), validatedBodyKey{}, &req)
-            next.ServeHTTP(w, r.WithContext(ctx))
-        })
-    }
-}
-```
-
 ## Route registration with middleware and path constraints
+
+`xvalidator.BodyValidator[T]()` decodes and validates the request body in a single middleware step. The validated struct is stored in the request context and retrieved with `xvalidator.Validated[T]()`.
 
 ```go
 func main() {
@@ -149,10 +121,10 @@ func main() {
     api := app.Group("/api/v1")
 
     api.AddConstraints("POST", "/users", kern.Constraints{
-        Validate: ValidateBody[CreateUserRequest](),
+        Validate: xvalidator.BodyValidator[CreateUserRequest](),
     }, func(c *kern.Context) {
-        req := c.Request.Context().Value(validatedBodyKey{}).(*CreateUserRequest)
-        user := store.Create(*req)
+        req, _ := xvalidator.Validated[CreateUserRequest](c.Context())
+        user := store.Create(req)
         c.Created(user)
     })
 
@@ -174,11 +146,11 @@ func main() {
 
     api.AddConstraints("PUT", "/users/{id}", kern.Constraints{
         Path:     kern.PathConstraints{"id": kern.UintPathConstraint},
-        Validate: ValidateBody[CreateUserRequest](),
+        Validate: xvalidator.BodyValidator[CreateUserRequest](),
     }, func(c *kern.Context) {
         id, _ := strconv.Atoi(c.Param("id"))
-        req := c.Request.Context().Value(validatedBodyKey{}).(*CreateUserRequest)
-        user, ok := store.Update(id, *req)
+        req, _ := xvalidator.Validated[CreateUserRequest](c.Context())
+        user, ok := store.Update(id, req)
         if !ok {
             c.Error(http.StatusNotFound, "user not found")
             return
@@ -203,6 +175,7 @@ func main() {
 
 ## Key patterns
 
+- **Validation middleware**: `xvalidator.BodyValidator[T]()` decodes + validates in one step; `xvalidator.Validated[T]()` retrieves the struct from context
 - **Validation tags**: `required`, `min`, `max`, `oneof`, `email` on struct fields via `xvalidator`
 - **Custom messages**: override error messages per tag with `xvalidator.Default().SetMessages()`
 - **Path constraints**: `kern.UintPathConstraint` ensures type-safe path params
