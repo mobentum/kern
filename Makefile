@@ -5,8 +5,8 @@ RESULTS_DIR := $(BENCH_DIR)/results
 PROFILE_DIR := $(RESULTS_DIR)/profiles
 GRPC_DIR := extensions/xgrpc
 GRPC_EXAMPLE_DIR := $(GRPC_DIR)/examples/kern-integration
-EXTENSION_DIRS := extensions/xconfig extensions/xgrpc extensions/xopenapi extensions/xlog extensions/xvalidator
-EXTENSION_EXAMPLE_DIRS := extensions/xconfig/examples/kern-integration extensions/xgrpc/examples/kern-integration extensions/xopenapi/examples/kern-integration extensions/xlog/examples/kern-integration extensions/xvalidator/examples/kern-integration
+EXTENSION_DIRS := extensions/xconfig extensions/xgrpc extensions/xopenapi extensions/xlog extensions/xotel extensions/xvalidator
+EXTENSION_EXAMPLE_DIRS := extensions/xconfig/examples/kern-integration extensions/xgrpc/examples/kern-integration extensions/xopenapi/examples/kern-integration extensions/xlog/examples/kern-integration extensions/xotel/examples/kern-integration extensions/xvalidator/examples/kern-integration
 
 BENCHTIME ?= 5s
 BENCH_PATTERN ?= BenchmarkFramework

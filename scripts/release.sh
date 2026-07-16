@@ -9,6 +9,7 @@ EXTENSIONS=(
   extensions/xgrpc
   extensions/xlog
   extensions/xopenapi
+  extensions/xotel
   extensions/xvalidator
 )
 
