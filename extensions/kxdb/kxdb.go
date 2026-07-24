@@ -30,8 +30,8 @@ type Config struct {
 	LogQueries      bool
 }
 
-// Databases holds named *xdb.DB instances.
-type Databases struct {
+// DBPool holds named *xdb.DB instances.
+type DBPool struct {
 	mu     sync.Mutex
 	dbs    map[string]*xdb.DB
 	logger *slog.Logger
@@ -39,8 +39,8 @@ type Databases struct {
 
 // New creates named *xdb.DB instances from a config map.
 // Panics if any required connection fails (fail-fast at startup).
-func New(configs map[string]Config) *Databases {
-	dbs := &Databases{
+func New(configs map[string]Config) *DBPool {
+	dbs := &DBPool{
 		dbs:    make(map[string]*xdb.DB, len(configs)),
 		logger: slog.Default(),
 	}
@@ -72,7 +72,7 @@ func New(configs map[string]Config) *Databases {
 }
 
 // Add creates an additional named database connection at runtime.
-func (dbs *Databases) Add(name string, cfg Config) error {
+func (dbs *DBPool) Add(name string, cfg Config) error {
 	db, err := xdb.New(xdb.DBConfig{
 		Driver:          cfg.Driver,
 		DSN:             cfg.DSN,
@@ -101,14 +101,14 @@ func (dbs *Databases) Add(name string, cfg Config) error {
 }
 
 // Get returns a named *xdb.DB. Returns nil if not found.
-func (dbs *Databases) Get(name string) *xdb.DB {
+func (dbs *DBPool) Get(name string) *xdb.DB {
 	dbs.mu.Lock()
 	defer dbs.mu.Unlock()
 	return dbs.dbs[name]
 }
 
 // Close closes all databases. Returns the first error encountered.
-func (dbs *Databases) Close() error {
+func (dbs *DBPool) Close() error {
 	dbs.mu.Lock()
 	defer dbs.mu.Unlock()
 	var firstErr error
@@ -122,15 +122,15 @@ func (dbs *Databases) Close() error {
 
 // ── Context keys ──────────────────────────────────────────
 
-type ctxKeyDatabases struct{}
+type ctxKeyDBPool struct{}
 type ctxKeyTx struct{ dbName string }
 
-// Middleware injects Databases into the request context.
+// Middleware injects DBPool into the request context.
 // Use CtxDB to retrieve a named database from within a handler.
-func Middleware(dbs *Databases) kern.MiddlewareFunc {
+func Middleware(dbs *DBPool) kern.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := context.WithValue(r.Context(), ctxKeyDatabases{}, dbs)
+			ctx := context.WithValue(r.Context(), ctxKeyDBPool{}, dbs)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -143,7 +143,7 @@ func CtxDB(ctx context.Context, name string) *xdb.DB {
 	if txDB, ok := ctx.Value(ctxKeyTx{dbName: name}).(*xdb.DB); ok && txDB != nil {
 		return txDB
 	}
-	dbs, ok := ctx.Value(ctxKeyDatabases{}).(*Databases)
+	dbs, ok := ctx.Value(ctxKeyDBPool{}).(*DBPool)
 	if !ok || dbs == nil {
 		return nil
 	}
@@ -159,7 +159,7 @@ func DefaultDB(ctx context.Context) *xdb.DB {
 // for the duration of the request. Commits on success, rolls back on
 // error or panic. The transactional DB replaces the named connection
 // for the scope of that request via CtxDB.
-func MiddlewareWithTx(dbName string, dbs *Databases) kern.MiddlewareFunc {
+func MiddlewareWithTx(dbName string, dbs *DBPool) kern.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			base := dbs.Get(dbName)
