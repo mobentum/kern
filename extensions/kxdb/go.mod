@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/mattn/go-sqlite3 v1.14.22
-	github.com/mobentum/kern v0.1.3
+	github.com/mobentum/kern v1.0.1
 	github.com/mobentum/xdb v0.2.0
 	github.com/stretchr/testify v1.11.1
 )

@@ -3,7 +3,7 @@ module github.com/mobentum/kern/extensions/xotel
 go 1.25.12
 
 require (
-	github.com/mobentum/kern v0.1.2
+	github.com/mobentum/kern v1.0.1
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/trace v1.35.0
 )
@@ -16,4 +16,3 @@ require (
 )
 
 replace github.com/mobentum/kern => ../../
-
