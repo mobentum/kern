@@ -2,6 +2,7 @@ package kern
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"log/slog"
@@ -45,7 +46,7 @@ func TestLogger_JSON_WithFields(t *testing.T) {
 	})
 
 	req := newRequest(http.MethodGet, "/test")
-	req.Header.Set("X-Request-ID", "req-123")
+	req = req.WithContext(context.WithValue(req.Context(), RequestIDCtxKey(), "req-123"))
 	res := serve(app, req)
 
 	if res.Code != http.StatusOK {
@@ -116,7 +117,7 @@ func TestLogger_WithSlogLogger(t *testing.T) {
 	})
 
 	req := newRequest(http.MethodGet, "/test")
-	req.Header.Set("X-Request-ID", "req-1")
+	req = req.WithContext(context.WithValue(req.Context(), RequestIDCtxKey(), "req-1"))
 	res := serve(app, req)
 
 	if res.Code != http.StatusOK {
