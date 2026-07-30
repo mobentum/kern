@@ -42,12 +42,7 @@ help:
 	@echo "  make grpc-buf-generate           # regenerate grpc example stubs with Buf"
 	@echo "  make ci-docs                     # CI install + lint + type-check + build for docs"
 	@echo "  make clean-artifacts             # remove generated benchmark/test artifacts"
-	@echo ""
-	@echo "Release:"
-	@echo "  make release-patch               # bump VERSION patch (0.1.0 -> 0.1.1)"
-	@echo "  make release-minor               # bump VERSION minor (0.1.0 -> 0.2.0)"
-	@echo "  make release-major               # bump VERSION major (0.1.0 -> 1.0.0)"
-	@echo ""
+
 	@echo "Variables:"
 	@echo "  BENCHTIME=5s BENCH_PATTERN=BenchmarkFramework RESULT_FILE=... CPU_PROFILE=... MEM_PROFILE=... PPROF_SYMBOL=..."
 
@@ -179,11 +174,4 @@ clean-profiles:
 clean-artifacts: clean-profiles
 	rm -f *.test $(BENCH_DIR)/*.test $(RESULTS_DIR)/bench-*.txt
 
-release-patch:
-	scripts/release.sh patch
-
-release-minor:
-	scripts/release.sh minor
-
-release-major:
-	scripts/release.sh major
+# Release is handled by goreleaser — push a tag (v* or extensions/*/v*) to trigger CI.
