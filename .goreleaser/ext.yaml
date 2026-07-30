@@ -4,10 +4,6 @@ version: 2
 
 project_name: __EXT_NAME__
 
-before:
-  hooks:
-    - go mod tidy
-
 builds:
   - skip: true
 

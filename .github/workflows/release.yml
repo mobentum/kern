@@ -49,14 +49,16 @@ jobs:
 
       - name: Generate goreleaser config
         run: |
+          mkdir -p "extensions/${{ env.EXT_NAME }}"
           sed -e "s/__EXT_NAME__/${{ env.EXT_NAME }}/g" \
               -e "s|__TAG_PREFIX__|extensions/${{ env.EXT_NAME }}/|g" \
-              .goreleaser/ext.yaml > /tmp/goreleaser-ext.yaml
+              .goreleaser/ext.yaml > "extensions/${{ env.EXT_NAME }}/.goreleaser.yaml"
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           version: '~> v2'
-          args: release --config /tmp/goreleaser-ext.yaml --clean
+          args: release --clean
+        working-directory: extensions/${{ env.EXT_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
