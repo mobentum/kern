@@ -1,0 +1,31 @@
+# Template for extension releases.
+# CI substitutes __EXT_NAME__ and __TAG_PREFIX__ before running goreleaser.
+version: 2
+
+project_name: __EXT_NAME__
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - skip: true
+
+git:
+  tag_prefix: __TAG_PREFIX__
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch

@@ -1,0 +1,62 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - 'extensions/*/v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release-root:
+    if: startsWith(github.ref_name, 'v') && !contains(github.ref_name, '/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.5'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-extension:
+    if: contains(github.ref_name, 'extensions/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '1.26.5'
+
+      - name: Derive extension name
+        run: echo "EXT_NAME=$(echo '${{ github.ref_name }}' | cut -d/ -f2)" >> "$GITHUB_ENV"
+
+      - name: Generate goreleaser config
+        run: |
+          sed -e "s/__EXT_NAME__/${{ env.EXT_NAME }}/g" \
+              -e "s|__TAG_PREFIX__|extensions/${{ env.EXT_NAME }}/|g" \
+              .goreleaser/ext.yaml > /tmp/goreleaser-ext.yaml
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: '~> v2'
+          args: release --config /tmp/goreleaser-ext.yaml --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
