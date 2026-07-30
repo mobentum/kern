@@ -36,27 +36,25 @@ import (
 	"time"
 )
 
-type ctxKey string
+type ctxKeyRequestID struct{}
 
-const requestIDKey ctxKey = "requestID"
+func RequestIDCtxKey() any { return ctxKeyRequestID{} }
 
-func RequestIDCtxKey() any { return requestIDKey }
-
-func GetRequestID(ctx context.Context) string {
-	if v, ok := ctx.Value(requestIDKey).(string); ok {
+func RequestIDFromContext(ctx context.Context) string {
+	if v, ok := ctx.Value(ctxKeyRequestID{}).(string); ok {
 		return v
 	}
 	return ""
 }
 
-const loggerKey ctxKey = "logger"
+type ctxKeyLogger struct{}
 
-func SetLogger(ctx context.Context, l *slog.Logger) context.Context {
-	return context.WithValue(ctx, loggerKey, l)
+func setLogger(ctx context.Context, l *slog.Logger) context.Context {
+	return context.WithValue(ctx, ctxKeyLogger{}, l)
 }
 
 func LoggerFromContext(ctx context.Context) *slog.Logger {
-	if v, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
+	if v, ok := ctx.Value(ctxKeyLogger{}).(*slog.Logger); ok {
 		return v
 	}
 	return nil

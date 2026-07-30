@@ -8,10 +8,10 @@ import (
 	"github.com/mobentum/kern"
 )
 
-type validatedKey[T any] struct{}
+type ctxKeyValidated[T any] struct{}
 
-func Validated[T any](ctx context.Context) (T, bool) {
-	v, ok := ctx.Value(validatedKey[T]{}).(T)
+func ValidatedFromContext[T any](ctx context.Context) (T, bool) {
+	v, ok := ctx.Value(ctxKeyValidated[T]{}).(T)
 	return v, ok
 }
 
@@ -31,7 +31,7 @@ func BodyValidator[T any]() kern.MiddlewareFunc {
 				json.NewEncoder(w).Encode(map[string]any{"error": "validation failed", "fields": err})
 				return
 			}
-			ctx := context.WithValue(r.Context(), validatedKey[T]{}, body)
+			ctx := context.WithValue(r.Context(), ctxKeyValidated[T]{}, body)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

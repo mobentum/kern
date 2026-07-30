@@ -204,7 +204,7 @@ Hardening options:
 Session accessor:
 
 ```go
-session, ok := middleware.GetSession(c.Context())
+session, ok := middleware.SessionFromContext(c.Context())
 if ok {
     session.Set("user_id", "123")
 }

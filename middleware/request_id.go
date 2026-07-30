@@ -9,8 +9,6 @@ import (
 	"github.com/mobentum/kern"
 )
 
-type contextKey string
-
 // generateRequestID generates a 128-bit random id
 func generateRequestID() string {
 	var b [16]byte
@@ -41,7 +39,7 @@ func RequestID() kern.MiddlewareFunc {
 	}
 }
 
-// GetRequestID returns the request ID from context.
-func GetRequestID(ctx context.Context) string {
-	return kern.GetRequestID(ctx)
+// RequestIDFromContext returns the request ID from context.
+func RequestIDFromContext(ctx context.Context) string {
+	return kern.RequestIDFromContext(ctx)
 }

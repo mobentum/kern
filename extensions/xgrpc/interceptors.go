@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type requestIDContextKey struct{}
+type ctxKeyRequestID struct{}
 
 // LoggingConfig controls grpc access log behavior.
 type LoggingConfig struct {
@@ -122,7 +122,7 @@ func UnaryRequestID(cfg RequestIDConfig) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		requestID := metadataValue(ctx, key)
 		if requestID != "" {
-			ctx = context.WithValue(ctx, requestIDContextKey{}, requestID)
+			ctx = context.WithValue(ctx, ctxKeyRequestID{}, requestID)
 		}
 		return handler(ctx, req)
 	}
@@ -142,14 +142,14 @@ func StreamRequestID(cfg RequestIDConfig) grpc.StreamServerInterceptor {
 			return handler(srv, ss)
 		}
 
-		wrapped := &contextServerStream{ServerStream: ss, ctx: context.WithValue(ctx, requestIDContextKey{}, requestID)}
+		wrapped := &contextServerStream{ServerStream: ss, ctx: context.WithValue(ctx, ctxKeyRequestID{}, requestID)}
 		return handler(srv, wrapped)
 	}
 }
 
 // RequestIDFromContext returns request id propagated by request-id interceptors.
 func RequestIDFromContext(ctx context.Context) string {
-	value, _ := ctx.Value(requestIDContextKey{}).(string)
+	value, _ := ctx.Value(ctxKeyRequestID{}).(string)
 	return value
 }
 

@@ -16,7 +16,7 @@ func TestSession_PersistsValuesAcrossRequests(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, ok := GetSession(c.Context())
+		session, ok := SessionFromContext(c.Context())
 		if !ok {
 			c.NoContent(http.StatusInternalServerError)
 			return
@@ -26,7 +26,7 @@ func TestSession_PersistsValuesAcrossRequests(t *testing.T) {
 	})
 
 	app.GET("/get", func(c *kern.Context) {
-		session, ok := GetSession(c.Context())
+		session, ok := SessionFromContext(c.Context())
 		if !ok {
 			c.NoContent(http.StatusInternalServerError)
 			return
@@ -67,13 +67,13 @@ func TestSession_TamperedCookieStartsFreshSession(t *testing.T) {
 	app.Use(Session(config))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("role", "admin")
 		_ = c.Text(http.StatusOK, "ok")
 	})
 
 	app.GET("/get", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		role, _ := session.Get("role")
 		_ = c.Text(http.StatusOK, "%v", role)
 	})
@@ -116,13 +116,13 @@ func TestSession_FlashesAreOneTime(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.AddFlash("welcome")
 		_ = c.Text(http.StatusOK, "ok")
 	})
 
 	app.GET("/flash", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		values := session.Flashes()
 		if len(values) == 0 {
 			_ = c.Text(http.StatusOK, "none")
@@ -175,7 +175,7 @@ func TestSession_ExpiredPayloadCreatesNewSession(t *testing.T) {
 	app := kern.New()
 	app.Use(Session(config))
 	app.GET("/id", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		_ = c.Text(http.StatusOK, "%s", session.ID())
 	})
 
@@ -211,7 +211,7 @@ func TestSession_VerifyKeyRotation(t *testing.T) {
 		VerifyKeys: [][]byte{oldKey},
 	}))
 	app.GET("/user", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		user, _ := session.Get("user")
 		_ = c.Text(http.StatusOK, "%v", user)
 	})
@@ -234,12 +234,12 @@ func TestSession_EncryptionRoundTrip(t *testing.T) {
 	}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("user", "alice")
 		_ = c.Text(http.StatusOK, "%s", "ok")
 	})
 	app.GET("/get", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		user, _ := session.Get("user")
 		_ = c.Text(http.StatusOK, "%v", user)
 	})
@@ -271,13 +271,13 @@ func TestSession_Delete(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("key", "value")
 		_ = c.Text(http.StatusOK, "set")
 	})
 
 	app.GET("/delete", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Delete("key")
 		_, exists := session.Get("key")
 		if exists {
@@ -306,7 +306,7 @@ func TestSession_Clear(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("a", "1")
 		session.Set("b", "2")
 		session.AddFlash("flash-msg")
@@ -314,7 +314,7 @@ func TestSession_Clear(t *testing.T) {
 	})
 
 	app.GET("/check", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		_, aExists := session.Get("a")
 		_, bExists := session.Get("b")
 		flashes := session.Flashes()
@@ -333,12 +333,12 @@ func TestSession_Clear(t *testing.T) {
 	app2 := kern.New()
 	app2.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 	app2.GET("/clear", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Clear()
 		_ = c.Text(http.StatusOK, "cleared")
 	})
 	app2.GET("/check", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		_, aExists := session.Get("a")
 		_, bExists := session.Get("b")
 		flashes := session.Flashes()
@@ -369,13 +369,13 @@ func TestSession_Destroy(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/destroy", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Destroy()
 		_ = c.Text(http.StatusOK, "done")
 	})
 
 	app.GET("/check", func(c *kern.Context) {
-		session, ok := GetSession(c.Context())
+		session, ok := SessionFromContext(c.Context())
 		if !ok {
 			_ = c.Text(http.StatusOK, "no-session")
 			return
@@ -387,7 +387,7 @@ func TestSession_Destroy(t *testing.T) {
 	app2 := kern.New()
 	app2.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 	app2.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("k", "v")
 		_ = c.Text(http.StatusOK, "set")
 	})
@@ -414,13 +414,13 @@ func TestSession_RegenerateID(t *testing.T) {
 	app.Use(Session(SessionConfig{SigningKey: []byte("secret-key")}))
 
 	app.GET("/set", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		session.Set("k", "v")
 		_ = c.Text(http.StatusOK, "set")
 	})
 
 	app.GET("/regenerate", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		oldID := session.ID()
 		session.RegenerateID()
 		if session.ID() == oldID {
@@ -514,7 +514,7 @@ func TestSession_DecryptKeyRotation(t *testing.T) {
 		DecryptKeys:   [][]byte{oldEncKey},
 	}))
 	app.GET("/user", func(c *kern.Context) {
-		session, _ := GetSession(c.Context())
+		session, _ := SessionFromContext(c.Context())
 		user, _ := session.Get("user")
 		_ = c.Text(http.StatusOK, "%v", user)
 	})

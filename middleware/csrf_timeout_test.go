@@ -15,7 +15,7 @@ func TestCSRF_SetsCookieAndContextToken(t *testing.T) {
 	app := kern.New()
 	app.Use(CSRF())
 	app.GET("/csrf", func(c *kern.Context) {
-		token, ok := CSRFToken(c.Context())
+		token, ok := CSRFTokenFromContext(c.Context())
 		if !ok || token == "" {
 			_ = c.Text(http.StatusInternalServerError, "missing-token")
 			return

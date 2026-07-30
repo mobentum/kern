@@ -23,7 +23,7 @@ var (
 	ErrSessionInvalidSignature  = errors.New("session cookie signature is invalid")
 )
 
-type sessionContextKey struct{}
+type ctxKeySession struct{}
 
 type sessionPayload struct {
 	ID        string                   `json:"id"`
@@ -124,7 +124,7 @@ func SessionMiddleware(configs ...SessionConfig) kern.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			sess := loadSession(r, config, codec)
-			ctx := context.WithValue(r.Context(), sessionContextKey{}, sess)
+			ctx := context.WithValue(r.Context(), ctxKeySession{}, sess)
 			r = r.WithContext(ctx)
 
 			sw := &sessionResponseWriter{ResponseWriter: w, request: r, config: config, session: sess, codec: codec}
@@ -145,9 +145,9 @@ func Session(configs ...SessionConfig) kern.MiddlewareFunc {
 	return SessionMiddleware(configs...)
 }
 
-// GetSession fetches the current request session from context.
-func GetSession(ctx context.Context) (*SessionState, bool) {
-	session, ok := ctx.Value(sessionContextKey{}).(*SessionState)
+// SessionFromContext fetches the current request session from context.
+func SessionFromContext(ctx context.Context) (*SessionState, bool) {
+	session, ok := ctx.Value(ctxKeySession{}).(*SessionState)
 	return session, ok && session != nil
 }
 

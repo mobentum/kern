@@ -126,7 +126,7 @@ type ctxKeyDBPool struct{}
 type ctxKeyTx struct{ dbName string }
 
 // Middleware injects DBPool into the request context.
-// Use CtxDB to retrieve a named database from within a handler.
+// Use DBFromContext to retrieve a named database from within a handler.
 func Middleware(dbs *DBPool) kern.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -136,10 +136,10 @@ func Middleware(dbs *DBPool) kern.MiddlewareFunc {
 	}
 }
 
-// CtxDB retrieves a named *xdb.DB from the context.
+// DBFromContext retrieves a named *xdb.DB from the context.
 // Returns nil if not found. When inside a MiddlewareWithTx scope,
 // returns the transaction-scoped DB for the given name.
-func CtxDB(ctx context.Context, name string) *xdb.DB {
+func DBFromContext(ctx context.Context, name string) *xdb.DB {
 	if txDB, ok := ctx.Value(ctxKeyTx{dbName: name}).(*xdb.DB); ok && txDB != nil {
 		return txDB
 	}
@@ -150,15 +150,15 @@ func CtxDB(ctx context.Context, name string) *xdb.DB {
 	return dbs.Get(name)
 }
 
-// DefaultDB is a shortcut for CtxDB(ctx, "default").
-func DefaultDB(ctx context.Context) *xdb.DB {
-	return CtxDB(ctx, "default")
+// DefaultDBFromContext is a shortcut for DBFromContext(ctx, "default").
+func DefaultDBFromContext(ctx context.Context) *xdb.DB {
+	return DBFromContext(ctx, "default")
 }
 
 // MiddlewareWithTx wraps the specified named database in a transaction
 // for the duration of the request. Commits on success, rolls back on
 // error or panic. The transactional DB replaces the named connection
-// for the scope of that request via CtxDB.
+// for the scope of that request via DBFromContext.
 func MiddlewareWithTx(dbName string, dbs *DBPool) kern.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

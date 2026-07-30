@@ -207,7 +207,7 @@ import kmw "github.com/mobentum/kern/middleware"
 app.Use(kmw.Session(kmw.SessionConfig{SigningKey: []byte("replace-with-strong-secret")}))
 
 app.GET("/login", func(c *kern.Context) {
-    session, _ := kmw.GetSession(c.Context())
+    session, _ := kmw.SessionFromContext(c.Context())
     session.Set("user_id", "123")
     _ = c.Text(http.StatusOK, "ok")
 })

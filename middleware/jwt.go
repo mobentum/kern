@@ -25,7 +25,7 @@ var (
 	ErrJWTNotYetValid    = errors.New("jwt token is not active")
 )
 
-const jwtClaimsContextKey contextKey = "jwtClaims"
+type ctxKeyJWTClaims struct{}
 
 var jwtDot = []byte{"."[0]}
 
@@ -53,7 +53,7 @@ func JWT(config JWTConfig) kern.MiddlewareFunc {
 
 	claimsKey := config.ContextKey
 	if claimsKey == nil {
-		claimsKey = jwtClaimsContextKey
+		claimsKey = ctxKeyJWTClaims{}
 	}
 
 	useTypedClaims := config.ClaimsType != nil
@@ -108,9 +108,9 @@ func JWT(config JWTConfig) kern.MiddlewareFunc {
 	}
 }
 
-// GetJWTClaims returns JWT claims from request context.
-func GetJWTClaims(ctx context.Context) (map[string]interface{}, bool) {
-	claims, ok := ctx.Value(jwtClaimsContextKey).(map[string]interface{})
+// JWTClaimsFromContext returns JWT claims from request context.
+func JWTClaimsFromContext(ctx context.Context) (map[string]interface{}, bool) {
+	claims, ok := ctx.Value(ctxKeyJWTClaims{}).(map[string]interface{})
 	return claims, ok
 }
 

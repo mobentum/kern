@@ -65,7 +65,7 @@ app.Use(middleware.Session(middleware.SessionConfig{
 Inside handlers:
 
 ```go
-session, ok := middleware.GetSession(c.Context())
+session, ok := middleware.SessionFromContext(c.Context())
 if ok {
     session.Set("user_id", "123")
 }

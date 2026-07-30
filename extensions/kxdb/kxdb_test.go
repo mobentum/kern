@@ -51,7 +51,7 @@ func TestAdd_Runtime(t *testing.T) {
 	assert.NotNil(t, dbs.Get("runtime"))
 }
 
-func TestCtxDB_Middleware(t *testing.T) {
+func TestDBFromContext_Middleware(t *testing.T) {
 	dbs := New(map[string]Config{
 		"default": {Driver: "sqlite3", DSN: ":memory:"},
 	})
@@ -62,7 +62,7 @@ func TestCtxDB_Middleware(t *testing.T) {
 
 	var resultDB *xdb.DB
 	app.GET("/test", func(c *kern.Context) {
-		resultDB = CtxDB(c.Context(), "default")
+		resultDB = DBFromContext(c.Context(), "default")
 		c.NoContent(200)
 	})
 
@@ -83,7 +83,7 @@ func TestDefaultDB(t *testing.T) {
 
 	var resultDB *xdb.DB
 	app.GET("/test", func(c *kern.Context) {
-		resultDB = DefaultDB(c.Context())
+		resultDB = DefaultDBFromContext(c.Context())
 		c.NoContent(200)
 	})
 
@@ -92,8 +92,8 @@ func TestDefaultDB(t *testing.T) {
 	assert.NotNil(t, resultDB)
 }
 
-func TestCtxDB_NoMiddleware(t *testing.T) {
-	db := CtxDB(context.Background(), "default")
+func TestDBFromContext_NoMiddleware(t *testing.T) {
+	db := DBFromContext(context.Background(), "default")
 	assert.Nil(t, db)
 }
 
@@ -114,7 +114,7 @@ func TestMiddlewareWithTx(t *testing.T) {
 	txGroup := app.Group("/tx", MiddlewareWithTx("default", dbs))
 
 	txGroup.POST("", func(c *kern.Context) {
-		db := CtxDB(c.Context(), "default")
+		db := DBFromContext(c.Context(), "default")
 		_, err := db.Insert("test_tx").Columns("val").Values("committed").Exec(c.Context())
 		if err != nil {
 			c.Error(500, err.Error())

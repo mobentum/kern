@@ -18,7 +18,7 @@ func TestJWT_ValidToken(t *testing.T) {
 	app := kern.New()
 	app.Use(JWT(JWTConfig{SigningKey: secret}))
 	app.GET("/secure", func(c *kern.Context) {
-		claims, ok := GetJWTClaims(c.Context())
+		claims, ok := JWTClaimsFromContext(c.Context())
 		if !ok {
 			_ = c.Error(http.StatusUnauthorized, "missing claims")
 			return

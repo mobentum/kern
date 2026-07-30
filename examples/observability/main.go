@@ -42,7 +42,7 @@ func main() {
 	}))
 
 	app.POST("/api/login", func(c *kern.Context) {
-		session, ok := middleware.GetSession(c.Context())
+		session, ok := middleware.SessionFromContext(c.Context())
 		if !ok {
 			c.NoContent(http.StatusInternalServerError)
 			return
@@ -67,7 +67,7 @@ func main() {
 
 	app.GET("/api/me", func(c *kern.Context) {
 		rawCookie, _ := c.Cookie("_session")
-		session, ok := middleware.GetSession(c.Context())
+		session, ok := middleware.SessionFromContext(c.Context())
 		if !ok {
 			c.NoContent(http.StatusInternalServerError)
 			return
