@@ -119,6 +119,14 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 			start := time.Now()
 			rw := &responseWriter{ResponseWriter: w, status: http.StatusOK}
 
+			if config.SLogger != nil {
+				l := config.SLogger
+				if requestID := GetRequestID(r.Context()); requestID != "" {
+					l = l.With("request_id", requestID)
+				}
+				r = r.WithContext(SetLogger(r.Context(), l))
+			}
+
 			// call next handler in chain
 			next.ServeHTTP(rw, r)
 
@@ -133,7 +141,7 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 					slog.Int("size", rw.size),
 				}
 
-				if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
+				if requestID := GetRequestID(r.Context()); requestID != "" {
 					attrs = append(attrs, slog.String("request_id", requestID))
 				}
 
@@ -154,7 +162,7 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 					"size":        rw.size,
 				}
 
-				if requestID := r.Header.Get("X-Request-ID"); requestID != "" {
+				if requestID := GetRequestID(r.Context()); requestID != "" {
 					entry["request_id"] = requestID
 				}
 

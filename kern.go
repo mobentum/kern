@@ -36,6 +36,32 @@ import (
 	"time"
 )
 
+type ctxKey string
+
+const requestIDKey ctxKey = "requestID"
+
+func RequestIDCtxKey() any { return requestIDKey }
+
+func GetRequestID(ctx context.Context) string {
+	if v, ok := ctx.Value(requestIDKey).(string); ok {
+		return v
+	}
+	return ""
+}
+
+const loggerKey ctxKey = "logger"
+
+func SetLogger(ctx context.Context, l *slog.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey, l)
+}
+
+func LoggerFromContext(ctx context.Context) *slog.Logger {
+	if v, ok := ctx.Value(loggerKey).(*slog.Logger); ok {
+		return v
+	}
+	return nil
+}
+
 // App is the main application instance
 type App struct {
 	router             *http.ServeMux

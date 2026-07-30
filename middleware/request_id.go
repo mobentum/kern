@@ -11,8 +11,6 @@ import (
 
 type contextKey string
 
-const requestIDKey contextKey = "requestID"
-
 // generateRequestID generates a 128-bit random id
 func generateRequestID() string {
 	var b [16]byte
@@ -35,7 +33,7 @@ func RequestID() kern.MiddlewareFunc {
 			}
 
 			// set context value and header
-			ctx := context.WithValue(r.Context(), requestIDKey, id)
+			ctx := context.WithValue(r.Context(), kern.RequestIDCtxKey(), id)
 			w.Header().Set("X-Request-ID", id)
 
 			next.ServeHTTP(w, r.WithContext(ctx))
@@ -43,9 +41,7 @@ func RequestID() kern.MiddlewareFunc {
 	}
 }
 
+// GetRequestID returns the request ID from context.
 func GetRequestID(ctx context.Context) string {
-	if v, ok := ctx.Value(requestIDKey).(string); ok {
-		return v
-	}
-	return ""
+	return kern.GetRequestID(ctx)
 }
