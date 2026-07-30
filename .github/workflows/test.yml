@@ -30,6 +30,7 @@ jobs:
             extensions/xopenapi/go.sum
             extensions/xotel/go.sum
             extensions/xvalidator/go.sum
+            extensions/kxdb/go.sum
 
       - name: Set up golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -78,6 +79,7 @@ jobs:
           - extensions/xopenapi
           - extensions/xotel
           - extensions/xvalidator
+          - extensions/kxdb
 
     steps:
       - uses: actions/checkout@v5
