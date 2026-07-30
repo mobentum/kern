@@ -107,7 +107,7 @@ func (s *UserStore) Delete(id int) bool {
 
 ## Route registration with middleware and path constraints
 
-`xvalidator.BodyValidator[T]()` decodes and validates the request body in a single middleware step. The validated struct is stored in the request context and retrieved with `xvalidator.Validated[T]()`.
+`xvalidator.BodyValidator[T]()` decodes and validates the request body in a single middleware step. The validated struct is stored in the request context and retrieved with `xvalidator.ValidatedFromContext[T]()`.
 
 ```go
 func main() {
@@ -123,7 +123,7 @@ func main() {
     api.AddConstraints("POST", "/users", kern.Constraints{
         Validate: xvalidator.BodyValidator[CreateUserRequest](),
     }, func(c *kern.Context) {
-        req, _ := xvalidator.Validated[CreateUserRequest](c.Context())
+        req, _ := xvalidator.ValidatedFromContext[CreateUserRequest](c.Context())
         user := store.Create(req)
         c.Created(user)
     })
@@ -149,7 +149,7 @@ func main() {
         Validate: xvalidator.BodyValidator[CreateUserRequest](),
     }, func(c *kern.Context) {
         id, _ := strconv.Atoi(c.Param("id"))
-        req, _ := xvalidator.Validated[CreateUserRequest](c.Context())
+        req, _ := xvalidator.ValidatedFromContext[CreateUserRequest](c.Context())
         user, ok := store.Update(id, req)
         if !ok {
             c.Error(http.StatusNotFound, "user not found")
@@ -175,7 +175,7 @@ func main() {
 
 ## Key patterns
 
-- **Validation middleware**: `xvalidator.BodyValidator[T]()` decodes + validates in one step; `xvalidator.Validated[T]()` retrieves the struct from context
+- **Validation middleware**: `xvalidator.BodyValidator[T]()` decodes + validates in one step; `xvalidator.ValidatedFromContext[T]()` retrieves the struct from context
 - **Validation tags**: `required`, `min`, `max`, `oneof`, `email` on struct fields via `xvalidator`
 - **Custom messages**: override error messages per tag with `xvalidator.Default().SetMessages()`
 - **Path constraints**: `kern.UintPathConstraint` ensures type-safe path params

@@ -12,7 +12,7 @@ import (
 	"github.com/mobentum/kern"
 )
 
-type csrfTokenContextKey struct{}
+type ctxKeyCSRFToken struct{}
 
 // CSRFConfig configures CSRF middleware behavior.
 type CSRFConfig struct {
@@ -88,7 +88,7 @@ func CSRF(configs ...CSRFConfig) kern.MiddlewareFunc {
 				setCSRFCookie(w, config, token)
 			}
 
-			ctx := context.WithValue(r.Context(), csrfTokenContextKey{}, token)
+			ctx := context.WithValue(r.Context(), ctxKeyCSRFToken{}, token)
 			r = r.WithContext(ctx)
 
 			if config.SkipSafe && isSafeMethod(r.Method) {
@@ -111,9 +111,9 @@ func CSRF(configs ...CSRFConfig) kern.MiddlewareFunc {
 	}
 }
 
-// CSRFToken returns the token attached to the request context by CSRF middleware.
-func CSRFToken(ctx context.Context) (string, bool) {
-	token, ok := ctx.Value(csrfTokenContextKey{}).(string)
+// CSRFTokenFromContext returns the token attached to the request context by CSRF middleware.
+func CSRFTokenFromContext(ctx context.Context) (string, bool) {
+	token, ok := ctx.Value(ctxKeyCSRFToken{}).(string)
 	return token, ok && token != ""
 }
 

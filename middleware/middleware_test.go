@@ -41,11 +41,11 @@ func TestRequestID_UseExisting(t *testing.T) {
 	}
 }
 
-func TestGetRequestID(t *testing.T) {
+func TestRequestIDFromContext(t *testing.T) {
 	app := kern.New()
 	app.Use(RequestID())
 	app.GET("/test", func(c *kern.Context) {
-		id := GetRequestID(c.Context())
+		id := RequestIDFromContext(c.Context())
 		if id == "" {
 			_ = c.Text(http.StatusOK, "empty")
 			return
@@ -64,7 +64,7 @@ func TestGetRequestID(t *testing.T) {
 	}
 
 	t.Run("returns empty for context without value", func(t *testing.T) {
-		id := GetRequestID(httptest.NewRequest(http.MethodGet, "/", nil).Context())
+		id := RequestIDFromContext(httptest.NewRequest(http.MethodGet, "/", nil).Context())
 		if id != "" {
 			t.Fatalf("got %q, want empty", id)
 		}

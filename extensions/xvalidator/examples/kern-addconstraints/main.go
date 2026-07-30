@@ -41,7 +41,7 @@ func main() {
 	app.AddConstraints(http.MethodPost, "/users-v2", kern.Constraints{
 		Validate: xvalidator.BodyValidator[CreateUserRequest](),
 	}, func(c *kern.Context) {
-		req, ok := xvalidator.Validated[CreateUserRequest](c.Context())
+		req, ok := xvalidator.ValidatedFromContext[CreateUserRequest](c.Context())
 		if !ok {
 			c.NoContent(http.StatusInternalServerError)
 			return

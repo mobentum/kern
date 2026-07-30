@@ -121,10 +121,10 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 
 			if config.SLogger != nil {
 				l := config.SLogger
-				if requestID := GetRequestID(r.Context()); requestID != "" {
+				if requestID := RequestIDFromContext(r.Context()); requestID != "" {
 					l = l.With("request_id", requestID)
 				}
-				r = r.WithContext(SetLogger(r.Context(), l))
+				r = r.WithContext(setLogger(r.Context(), l))
 			}
 
 			// call next handler in chain
@@ -141,7 +141,7 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 					slog.Int("size", rw.size),
 				}
 
-				if requestID := GetRequestID(r.Context()); requestID != "" {
+				if requestID := RequestIDFromContext(r.Context()); requestID != "" {
 					attrs = append(attrs, slog.String("request_id", requestID))
 				}
 
@@ -162,7 +162,7 @@ func Logger(configs ...LoggerConfig) MiddlewareFunc {
 					"size":        rw.size,
 				}
 
-				if requestID := GetRequestID(r.Context()); requestID != "" {
+				if requestID := RequestIDFromContext(r.Context()); requestID != "" {
 					entry["request_id"] = requestID
 				}
 

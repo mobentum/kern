@@ -300,7 +300,7 @@ app.Use(middleware.Session(middleware.SessionConfig{
 
 app.GET("/me", func(c *kern.Context) {
     rawCookie, _ := c.Cookie("_session")
-    session, ok := middleware.GetSession(c.Context())
+    session, ok := middleware.SessionFromContext(c.Context())
     if !ok {
         c.NoContent(http.StatusInternalServerError)
         return
