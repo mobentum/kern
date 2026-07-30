@@ -24,12 +24,7 @@ jobs:
           cache-dependency-path: |
             go.sum
             benchmarks/fourway/go.sum
-            extensions/xconfig/go.sum
-            extensions/xgrpc/go.sum
-            extensions/xlog/go.sum
-            extensions/xopenapi/go.sum
-            extensions/xotel/go.sum
-            extensions/xvalidator/go.sum
+            extensions/*/go.sum
 
       - name: Set up golangci-lint
         uses: golangci/golangci-lint-action@v9
@@ -45,6 +40,21 @@ jobs:
 
       - name: Run govulncheck
         run: make go-vuln
+
+  discover-extensions:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Discover extension modules
+        id: discover
+        run: |
+          MODULES=$(ls -1d extensions/*/go.mod 2>/dev/null | sed 's|/go.mod||' | jq -R -s -c '{module: split("\n")[:-1]}')
+          echo "matrix=$MODULES" >> "$GITHUB_OUTPUT"
+          echo "Found modules: $MODULES"
 
   test-root:
     runs-on: ubuntu-latest
@@ -67,17 +77,11 @@ jobs:
         run: go test -race -count=1 ./...
 
   test-extensions:
+    needs: discover-extensions
     runs-on: ubuntu-latest
 
     strategy:
-      matrix:
-        module:
-          - extensions/xconfig
-          - extensions/xgrpc
-          - extensions/xlog
-          - extensions/xopenapi
-          - extensions/xotel
-          - extensions/xvalidator
+      matrix: ${{ fromJSON(needs.discover-extensions.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v5
@@ -112,5 +116,3 @@ jobs:
 
       - name: Benchmark smoke test
         run: make ci-benchmark-smoke
-
-
