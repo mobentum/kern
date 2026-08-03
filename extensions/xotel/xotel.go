@@ -6,26 +6,31 @@ import (
 	"time"
 
 	"github.com/mobentum/kern"
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"go.opentelemetry.io/otel/trace"
 )
 
-// SetupConfig configures the global OpenTelemetry tracer provider.
+// SetupConfig configures the global OpenTelemetry tracer and meter providers.
 type SetupConfig struct {
 	// ServiceName is included as the resource service.name attribute.
 	ServiceName string
 	// Endpoint is the OTLP HTTP collector endpoint (host:port). Defaults to localhost:4318.
 	Endpoint string
-	// Insecure disables TLS for the OTLP exporter. Defaults to true (local dev).
+	// Insecure disables TLS for the OTLP exporters. Defaults to true (local dev).
 	Insecure bool
 	// BatchTimeout controls the batch span processor flush interval. Defaults to 5s.
 	BatchTimeout time.Duration
+	// Metrics enables the OTLP meter provider with Go runtime metrics. Defaults to true.
+	Metrics bool
 }
 
 // Config configures the OpenTelemetry middleware.
@@ -117,26 +122,16 @@ func defaultConfig() Config {
 	}
 }
 
-// Setup configures the global tracer provider with an OTLP HTTP exporter and
-// the W3C TraceContext + Baggage propagators. It returns a shutdown function
-// that flushes pending spans. Call it once at process startup and defer the
-// returned function.
+// Setup configures the global tracer and meter providers with OTLP HTTP
+// exporters and the W3C TraceContext + Baggage propagators. It returns a
+// shutdown function that flushes pending spans/metrics. Call it once at
+// process startup and defer the returned function.
 func Setup(cfg SetupConfig) (func(), error) {
 	if cfg.Endpoint == "" {
 		cfg.Endpoint = "localhost:4318"
 	}
 	if cfg.BatchTimeout <= 0 {
 		cfg.BatchTimeout = 5 * time.Second
-	}
-
-	opts := []otlptracehttp.Option{otlptracehttp.WithEndpoint(cfg.Endpoint)}
-	if cfg.Insecure {
-		opts = append(opts, otlptracehttp.WithInsecure())
-	}
-
-	exporter, err := otlptracehttp.New(context.Background(), opts...)
-	if err != nil {
-		return nil, err
 	}
 
 	res, err := resource.New(context.Background(),
@@ -146,19 +141,59 @@ func Setup(cfg SetupConfig) (func(), error) {
 		return nil, err
 	}
 
-	provider := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(cfg.BatchTimeout)),
+	shutdowns := make([]func(context.Context) error, 0, 2)
+	ctx := context.Background()
+
+	// Traces
+	traceOpts := []otlptracehttp.Option{otlptracehttp.WithEndpoint(cfg.Endpoint)}
+	if cfg.Insecure {
+		traceOpts = append(traceOpts, otlptracehttp.WithInsecure())
+	}
+	traceExporter, err := otlptracehttp.New(ctx, traceOpts...)
+	if err != nil {
+		return nil, err
+	}
+	traceProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(traceExporter, sdktrace.WithBatchTimeout(cfg.BatchTimeout)),
 		sdktrace.WithResource(res),
 	)
-	otel.SetTracerProvider(provider)
+	otel.SetTracerProvider(traceProvider)
+	shutdowns = append(shutdowns, traceProvider.Shutdown)
+
+	// Metrics (Go runtime + process collectors)
+	var metricProvider *metric.MeterProvider
+	if cfg.Metrics {
+		metricOpts := []otlpmetrichttp.Option{otlpmetrichttp.WithEndpoint(cfg.Endpoint)}
+		if cfg.Insecure {
+			metricOpts = append(metricOpts, otlpmetrichttp.WithInsecure())
+		}
+		metricExporter, err := otlpmetrichttp.New(ctx, metricOpts...)
+		if err != nil {
+			return nil, err
+		}
+		metricProvider = metric.NewMeterProvider(
+			metric.WithReader(metric.NewPeriodicReader(metricExporter,
+				metric.WithInterval(cfg.BatchTimeout))),
+			metric.WithResource(res),
+		)
+		otel.SetMeterProvider(metricProvider)
+		shutdowns = append(shutdowns, metricProvider.Shutdown)
+
+		if err := runtime.Start(runtime.WithMinimumReadMemStatsInterval(cfg.BatchTimeout)); err != nil {
+			return nil, err
+		}
+	}
+
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
 
 	return func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		cctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		_ = provider.Shutdown(ctx)
+		for _, shutdown := range shutdowns {
+			_ = shutdown(cctx)
+		}
 	}, nil
 }
